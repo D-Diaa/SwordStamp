@@ -1,0 +1,80 @@
+{
+  "generated_by": "visualization.compile_results",
+  "bundle_schema_version": 1,
+  "datasets": [
+    "c4-val-def-256",
+    "c4-val-def-256b",
+    "c4-val-def-512"
+  ],
+  "selected_families": ["lsh", "kmeans", "pmark", "samark", "none"],
+  "selected_family_cells": [
+    "lsh:context:rejection:sentence-nltk",
+    "lsh:context:best-of-n:sentence-nltk",
+    "lsh:fixed:best-of-n:sentence-nltk",
+    "lsh:fixed_diverse:best-of-n:sentence-nltk",
+    "lsh:fixed_diverse:best-of-n:semspan-spacy-max15-win5",
+    "kmeans:context:rejection:sentence-nltk",
+    "kmeans:context:best-of-n:sentence-nltk",
+    "kmeans:fixed:best-of-n:sentence-nltk",
+    "kmeans:fixed_diverse:best-of-n:sentence-nltk",
+    "kmeans:fixed_diverse:best-of-n:semspan-spacy-max15-win5",
+    "pmark:online:rejection:sentence-nltk",
+    "samark:flags-run:rejection:sentence-nltk",
+    "none:none:rejection:sentence-nltk"
+  ],
+  "selected_oracle_ks": [4, 8, 16, 32, 64],
+  "generation_num_candidates": [64.0],
+  "selected_attacks": {
+    "sentence_paraphrasers": ["pegasus", "parrot"],
+    "bigram_selection_threshold": 0.03,
+    "dipper_lexical_order": [[20, 20], [20, 40], [20, 80], [40, 20], [80, 20]],
+    "controlled_edits": {
+      "controlled_reorder": [0.1, 0.25, 0.5, 0.75, 1.0],
+      "synonym_substitution": [0.1, 0.25, 0.5, 0.75, 1.0],
+      "split_midpoint": [0.2, 0.5, 1.0],
+      "merge_adjacent": [0.2, 0.5, 1.0]
+    },
+    "eda_no_box_ks": [1, 2, 4, 8, 16, 32, 64],
+    "eda_positional_comparison_ks": [4, 16, 64],
+    "eda_detector_access_ks": [4, 8, 16, 32, 64],
+    "eda_detector_access_cells": [
+      "kmeans:context:rejection:sentence-nltk",
+      "kmeans:fixed_diverse:best-of-n:semspan-spacy-max15-win5"
+    ]
+  },
+  "unit_encoder_transfer_cells": [
+    "lsh:context:rejection:sentence-nltk",
+    "pmark:online:rejection:sentence-nltk"
+  ],
+  "counts": {
+    "cells": 407,
+    "dataset_cells": 1199,
+    "per_sample_rows": 416768,
+    "unit_encoder_transfer_rows": 154326
+  },
+  "review_projection": {
+    "purpose": "plot-only double-anonymous artifact",
+    "numerical_values_changed": false,
+    "raw_text_included": false,
+    "provider_encoder_label": "AbeHou/SemStamp-c4-sbert",
+    "per_sample_columns": [
+      "scheme", "family", "mask", "sampling", "segmentation", "flag_scope",
+      "msig", "generation_num_candidates", "stage", "z_source", "attack",
+      "attack_family", "attack_setting", "K", "surrogate", "anchor",
+      "attacker_seg", "candidate_agg", "bag_agg", "dipper_lex", "dipper_order",
+      "dataset", "sample_id", "z", "z_wm", "detected_at1", "detected_at5",
+      "evades_at5", "llm_judge", "anchor_reword", "anchor_reorder", "anchor_reseg"
+    ],
+    "unit_encoder_transfer_columns": [
+      "scheme", "mask", "attack_family", "surrogate", "dataset", "document_id",
+      "surrogate_encoder", "provider_encoder", "surrogate_cosine_displacement",
+      "provider_cosine_displacement"
+    ]
+  },
+  "sha256": {
+    "cell_summary.csv": "cab0a5f5674e0fb0cfa7374743f9a71800f110ba3eee03c51f1d9e9fe0a825cc",
+    "dataset_summary.csv": "8d0c7e8ba1a206f5294e3b072833fd2aca0acb6de956b1eafb9d052a278bca2e",
+    "per_sample.parquet": "9f3149256993090c50d0e30caf2cab9286f21d7ce1113f83f9d19b0c35f08b30",
+    "unit_encoder_transfer.parquet": "eb674dc4c53c2f7caf10ad552e2dbb61aa5124e0983d1b262c15b603d6a1e61e"
+  }
+}

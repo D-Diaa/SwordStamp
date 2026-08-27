@@ -1,0 +1,1239 @@
+#!/usr/bin/env python3
+"""
+gpu-scheduler — manage the GPU scheduler daemon.
+
+Commands
+--------
+  init   --gpus 0,1,2  [--warmup-gb N] [--poll N]
+      Create ~/.gpu-scheduler/ and write config.json.
+
+  start  [--foreground]
+      Start the dispatcher daemon (background by default).
+
+  stop
+      Send SIGTERM to the running dispatcher.
+
+  restart
+      stop + start.
+
+  status
+      Short summary: dispatcher state, GPU states, queue depth.
+
+  pause / resume
+      Pause or resume dispatching of queued tasks.  Running tasks and
+      warmup are unaffected; the queue simply stops draining.
+
+  logs   [TASK_ID] [-f]
+      Print the dispatcher log, or a task's stdout/stderr log.
+      -f follows the log (like tail -f).
+
+  clear-queue
+      Delete all pending tasks from the queue.
+
+  retry  TASK_ID
+      Move a failed task back to the queue with the same run parameters.
+
+  defer  TASK_ID
+      Kill a running task and put it back in the queue.
+
+  kill  TASK_ID
+      Kill a queued/running task and move it to failed without a return code.
+
+  priority  TASK_ID  PRIORITY
+      Change the priority of a queued task.
+
+  kill-gpu  GPU_INDEX
+      Kill any running task on that GPU (re-enqueuing it) and remove the
+      GPU from the managed list.
+
+  add-gpu  GPU_INDEX
+      Add a GPU to the managed list.
+
+  stats  [--days N] [--json]
+      Usage statistics from done/failed history: success rate, GPU-hours,
+      queue-wait/runtime distributions, per-GPU and per-script breakdowns.
+
+  gc  [--days N] [--dry-run]
+      Prune done/failed records older than N days (default 30) plus their
+      logs, orphaned logs, and stale temp files.
+
+  wait  TASK_ID [TASK_ID ...] [--timeout DUR]
+      Block until the given tasks finish. Exit 0 only if all succeeded,
+      1 if any failed, 124 on timeout.
+
+  nuke  [--yes]
+      Kill all running tasks, clear the queue, and stop the dispatcher.
+"""
+
+import argparse
+import os
+import signal
+import statistics
+import subprocess
+import sys
+import time
+from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# ── Bootstrap: find the library ───────────────────────────────────────────────
+_LIB = Path.home() / ".gpu-scheduler" / "lib"
+sys.path.insert(0, str(_LIB))
+
+from common import (
+    SCHEDULER_HOME, QUEUE_DIR, RUNNING_DIR, DONE_DIR, FAILED_DIR, LOGS_DIR,
+    EXIT_CODES_DIR, LIB_DIR, CONFIG_FILE, PID_FILE, DISPATCHER_LOG, ALL_DIRS,
+    DEFAULT_CONFIG, DISPATCHER_STOP_TIMEOUT, load_config, save_config, validate_config,
+    is_dispatcher_running, read_dispatcher_pid,
+    list_tasks, sorted_queue, write_task, read_task,
+    resolve_task_id_prefix, task_to_queue_record, task_ids_in_all_state_dirs,
+    parse_duration, format_duration,
+    retry_failed_task, set_queued_task_priority, preempt_running_task_direct,
+    kill_task_direct, kill_process_tree, is_cpu_task,
+    is_paused, set_paused,
+    submit_dispatcher_request, signal_dispatcher, wait_dispatcher_request_result,
+    cleanup_dispatcher_request_result,
+    colour, BOLD, GREEN, RED, YELLOW, CYAN, GREY, RESET, die,
+)
+
+
+def _task_gpu_indices(task: dict) -> list[int]:
+    raw_indices = task.get("gpu_indices")
+    if isinstance(raw_indices, list) and raw_indices:
+        try:
+            return [int(idx) for idx in raw_indices]
+        except (TypeError, ValueError):
+            return []
+    gpu_idx = task.get("gpu_index")
+    if gpu_idx is None:
+        return []
+    try:
+        return [int(gpu_idx)]
+    except (TypeError, ValueError):
+        return []
+
+
+def _task_gpu_label(task: dict, *, pending: bool = False) -> str:
+    if is_cpu_task(task):
+        return "CPU"
+    indices = _task_gpu_indices(task)
+    if indices:
+        joined = ",".join(str(idx) for idx in indices)
+        return ("GPUs " if len(indices) > 1 else "GPU ") + joined
+    try:
+        count = max(1, int(task.get("gpu_count", 1)))
+    except (TypeError, ValueError):
+        count = 1
+    if pending:
+        return f"{count} GPU{'s' if count != 1 else ''}"
+    return "GPU ?"
+
+
+# ── init ──────────────────────────────────────────────────────────────────────
+
+def cmd_init(args) -> None:
+    if not args.gpus:
+        die("--gpus is required. Example: gpu-scheduler init --gpus 0,1,2")
+
+    try:
+        gpu_indices = [int(x.strip()) for x in args.gpus.split(",") if x.strip()]
+    except ValueError:
+        die("--gpus must be a comma-separated list of integers.")
+
+    if not gpu_indices:
+        die("--gpus list is empty.")
+
+    # Create directories
+    SCHEDULER_HOME.mkdir(parents=True, exist_ok=True)
+    for d in ALL_DIRS:
+        d.mkdir(parents=True, exist_ok=True)
+
+    cfg = dict(DEFAULT_CONFIG)
+    cfg["gpu_indices"] = gpu_indices
+    if args.warmup_gb is not None:
+        cfg["warmup_gb"] = float(args.warmup_gb)
+    if args.no_warmup:
+        cfg["warmup_enabled"] = False
+    if args.poll is not None:
+        cfg["poll_interval"] = float(args.poll)
+    if args.tasks_per_gpu is not None:
+        cfg["tasks_per_gpu"] = int(args.tasks_per_gpu)
+    if args.ready_free_frac is not None:
+        cfg["gpu_ready_free_frac"] = float(args.ready_free_frac)
+    if args.ready_timeout is not None:
+        cfg["gpu_ready_timeout"] = float(args.ready_timeout)
+    if args.drain_after is not None:
+        try:
+            cfg["multi_gpu_drain_sec"] = (
+                0.0 if args.drain_after in ("0", "off") else parse_duration(args.drain_after)
+            )
+        except ValueError as exc:
+            die(str(exc))
+
+    try:
+        save_config(cfg)
+    except ValueError as exc:
+        die(str(exc))
+    print(colour("✓", GREEN, BOLD), f"Initialised ~/.gpu-scheduler/ with GPU indices: {gpu_indices}")
+    print(f"  warmup:        {'enabled' if cfg.get('warmup_enabled', True) else 'disabled'}")
+    print(f"  warmup_gb:     {cfg['warmup_gb']}")
+    print(f"  poll_interval: {cfg['poll_interval']}s")
+    print(f"  tasks_per_gpu: {cfg['tasks_per_gpu']}")
+    print(f"  ready_free:    {cfg['gpu_ready_free_frac']:.2f}")
+    print(f"  ready_timeout: {cfg['gpu_ready_timeout']}s")
+    drain = cfg.get("multi_gpu_drain_sec", 0)
+    print(f"  drain_after:   {format_duration(drain) if drain else 'off'} (multi-GPU anti-starvation)")
+    print()
+    print(f"  Run:  {colour('gpu-scheduler start', BOLD)}")
+
+
+# ── start ─────────────────────────────────────────────────────────────────────
+
+def cmd_start(args) -> None:
+    if is_dispatcher_running():
+        pid = read_dispatcher_pid()
+        print(colour("✓", GREEN), f"Dispatcher already running (PID {pid}).")
+        return
+
+    try:
+        validate_config(load_config())
+    except FileNotFoundError as e:
+        die(str(e))
+    except ValueError as e:
+        die(f"Invalid config: {e}")
+
+    dispatcher_script = LIB_DIR / "dispatcher.py"
+    if not dispatcher_script.exists():
+        die(f"Library not installed: {dispatcher_script}\nRun install.sh first.")
+
+    if args.foreground:
+        # Run in foreground (useful for debugging / systemd)
+        os.execv(sys.executable, [sys.executable, str(dispatcher_script)])
+        # execv replaces the process; line below is unreachable
+        return
+
+    # Daemonise: double-fork, redirect stdio
+    log_path = str(DISPATCHER_LOG)
+
+    # Use nohup + redirect so the process survives terminal close
+    log_fh = open(log_path, "a")
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, str(dispatcher_script)],
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+            start_new_session=True,
+            close_fds=True,
+        )
+    finally:
+        log_fh.close()
+    # Give it a moment to write the PID file
+    import time
+    for _ in range(20):
+        time.sleep(0.1)
+        if PID_FILE.exists():
+            break
+
+    pid = read_dispatcher_pid()
+    if pid:
+        print(colour("✓", GREEN), f"Dispatcher started (PID {pid}).")
+        print(f"  Logs: {DISPATCHER_LOG}")
+    else:
+        print(colour("✗", RED), "Dispatcher may have crashed immediately. Check:")
+        print(f"  {DISPATCHER_LOG}")
+        sys.exit(1)
+
+
+# ── stop ──────────────────────────────────────────────────────────────────────
+
+def _configured_stop_timeout() -> float:
+    try:
+        cfg = load_config()
+        return max(DISPATCHER_STOP_TIMEOUT, float(cfg.get("gpu_ready_timeout", 0)) + 20.0)
+    except Exception:
+        return DISPATCHER_STOP_TIMEOUT
+
+
+def _stop_dispatcher(force: bool = False, timeout: float | None = None) -> bool:
+    pid = read_dispatcher_pid()
+    if pid is None:
+        print(colour("·", GREY), "Dispatcher is not running.")
+        PID_FILE.unlink(missing_ok=True)
+        return True
+
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        print(colour("·", GREY), "Dispatcher process not found (stale PID file).")
+        PID_FILE.unlink(missing_ok=True)
+        return True
+
+    # Wait for it to exit. This must exceed gpu_ready_timeout because shutdown
+    # signals may arrive while the dispatcher is waiting for warmup memory.
+    import time
+    timeout = _configured_stop_timeout() if timeout is None else timeout
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        time.sleep(0.2)
+        if not is_dispatcher_running():
+            print(colour("✓", GREEN), f"Dispatcher stopped (was PID {pid}).")
+            return True
+
+    if force:
+        print(colour("✗", RED), f"Dispatcher (PID {pid}) did not stop in {timeout:.0f} s; sending SIGKILL.")
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        for _ in range(50):
+            time.sleep(0.1)
+            if not is_dispatcher_running():
+                PID_FILE.unlink(missing_ok=True)
+                return True
+    print(colour("✗", RED), f"Dispatcher (PID {pid}) did not stop in {timeout:.0f} s. "
+          "Try: kill -9 " + str(pid))
+    return False
+
+
+def cmd_stop(args) -> None:
+    if not _stop_dispatcher(force=False):
+        sys.exit(1)
+
+
+# ── restart ───────────────────────────────────────────────────────────────────
+
+def cmd_restart(args) -> None:
+    cmd_stop(args)
+    cmd_start(args)
+
+
+# ── status ────────────────────────────────────────────────────────────────────
+
+def cmd_status(args) -> None:
+    # Dispatcher state
+    pid = read_dispatcher_pid()
+    if pid:
+        print(colour(f"● Dispatcher running", GREEN, BOLD), f"(PID {pid})")
+    else:
+        print(colour("○ Dispatcher stopped", RED, BOLD))
+    if is_paused():
+        print(colour("‖ Dispatching PAUSED", YELLOW, BOLD), "(resume with: gpu-scheduler resume)")
+
+    # Config
+    try:
+        cfg = validate_config(load_config())
+        print(f"  GPUs:          {cfg['gpu_indices']}")
+        print(f"  Warmup:        {cfg['warmup_gb']} GB")
+        print(f"  Tasks per GPU: {cfg.get('tasks_per_gpu', 1)}")
+        print(f"  Ready check:   {cfg.get('gpu_ready_free_frac', 0):.2f} free, {cfg.get('gpu_ready_timeout', 0)}s")
+    except FileNotFoundError:
+        print(colour("  (not initialised – run: gpu-scheduler init --gpus ...)", YELLOW))
+        return
+    except ValueError as exc:
+        print(colour(f"  invalid config: {exc}", RED))
+        return
+
+    # Queue depths
+    n_queue   = len(list(QUEUE_DIR.glob("*.json")))
+    n_running = len(list(RUNNING_DIR.glob("*.json")))
+    n_done    = len(list(DONE_DIR.glob("*.json")))
+    n_failed  = len(list(FAILED_DIR.glob("*.json")))
+
+    print()
+    print(f"  {'Queued:':<12}{n_queue}")
+    print(f"  {'Running:':<12}{n_running}")
+    print(f"  {'Done:':<12}{n_done}")
+    print(f"  {'Failed:':<12}{n_failed}")
+
+    # Show queued tasks
+    queue = sorted_queue(list_tasks(QUEUE_DIR))
+    if queue:
+        print()
+        print(colour("  Pending tasks:", BOLD))
+        for t in queue:
+            gpu_req = _task_gpu_label(t, pending=True)
+            print(f"    {colour(t['id'], CYAN)}  {gpu_req}  {t.get('script', '?')}")
+
+    # Show running tasks
+    running = list_tasks(RUNNING_DIR)
+    if running:
+        print()
+        print(colour("  Running tasks:", BOLD))
+        for t in running:
+            print(f"    {colour(t['id'], GREEN)}  {_task_gpu_label(t)}  {t.get('script', '?')}")
+
+    if n_failed:
+        print()
+        failed = sorted(list_tasks(FAILED_DIR), key=lambda t: t.get("end_time", ""))
+        print(colour("  Failed tasks:", BOLD))
+        for t in failed[-5:]:  # show last 5
+            rc = t.get("returncode", "-")
+            print(f"    {colour(t['id'], RED)}  rc={rc}  {t.get('script', '?')}")
+
+
+# ── logs ──────────────────────────────────────────────────────────────────────
+
+def _stream_file(path: Path) -> None:
+    """Copy a file to stdout in chunks (don't slurp multi-GB logs into RAM)."""
+    with open(path, "rb") as fh:
+        while True:
+            chunk = fh.read(1 << 20)
+            if not chunk:
+                break
+            sys.stdout.buffer.write(chunk)
+    sys.stdout.buffer.flush()
+
+
+def _tail_lines(path: Path, n: int) -> tuple[list[str], int]:
+    """Last n lines of a file (reading only its tail) and the offset they end at."""
+    with open(path, "rb") as fh:
+        fh.seek(0, os.SEEK_END)
+        end = size = fh.tell()
+        block = 1 << 16
+        data = b""
+        while size > 0 and data.count(b"\n") <= n:
+            step = min(block, size)
+            size -= step
+            fh.seek(size)
+            data = fh.read(step) + data
+            if size == 0:
+                break
+    return data.decode("utf-8", errors="replace").splitlines()[-n:], end
+
+
+def _follow_file(path: Path, offset: int | None = None) -> None:
+    """tail -f: print appended data until interrupted.
+
+    `offset` is where to start reading; pass the offset returned by
+    _tail_lines so nothing appended between the two calls is skipped.
+    """
+    import time
+    with open(path, "rb") as fh:
+        if offset is None:
+            fh.seek(0, os.SEEK_END)
+        else:
+            fh.seek(min(offset, os.fstat(fh.fileno()).st_size))
+        try:
+            while True:
+                chunk = fh.read()
+                if chunk:
+                    sys.stdout.buffer.write(chunk)
+                    sys.stdout.buffer.flush()
+                else:
+                    time.sleep(0.2)
+        except KeyboardInterrupt:
+            pass
+
+
+def cmd_logs(args) -> None:
+    if args.task_id:
+        # Task log
+        log = LOGS_DIR / f"{args.task_id}.log"
+        if not log.exists():
+            # Try prefix match
+            matches = list(LOGS_DIR.glob(f"{args.task_id}*.log"))
+            if not matches:
+                die(f"No log found for task: {args.task_id}")
+            if len(matches) > 1:
+                die("Ambiguous task/log prefix: " + ", ".join(sorted(m.stem for m in matches)))
+            log = matches[0]
+        if args.follow:
+            lines, offset = _tail_lines(log, getattr(args, "n", 100))
+            print("\n".join(lines), flush=True)
+            _follow_file(log, offset)
+        else:
+            _stream_file(log)
+    else:
+        # Dispatcher log
+        if not DISPATCHER_LOG.exists():
+            die(f"No dispatcher log at {DISPATCHER_LOG}")
+        n = getattr(args, "n", 100)
+        lines, offset = _tail_lines(DISPATCHER_LOG, n)
+        print("\n".join(lines), flush=True)
+        if args.follow:
+            _follow_file(DISPATCHER_LOG, offset)
+
+
+# ── pause / resume ────────────────────────────────────────────────────────────
+
+def cmd_pause(args) -> None:
+    if is_paused():
+        print(colour("·", GREY), "Dispatching is already paused.")
+        return
+    set_paused(True)
+    signal_dispatcher()
+    print(colour("‖", YELLOW, BOLD), "Dispatching paused. Running tasks continue; "
+          "the queue stops draining until: gpu-scheduler resume")
+
+
+def cmd_resume(args) -> None:
+    if not is_paused():
+        print(colour("·", GREY), "Dispatching is not paused.")
+        return
+    set_paused(False)
+    signal_dispatcher()
+    print(colour("✓", GREEN), "Dispatching resumed.")
+
+
+# ── clear-queue ───────────────────────────────────────────────────────────────
+
+def cmd_clear_queue(args) -> None:
+    queue_files = list(QUEUE_DIR.glob("*.json"))
+    if not queue_files:
+        print(colour("·", GREY), "Queue is already empty.")
+        return
+    for f in queue_files:
+        f.unlink(missing_ok=True)
+    # Wake the dispatcher so reservations for cleared tasks release immediately.
+    signal_dispatcher()
+    n = len(queue_files)
+    print(colour("✓", GREEN), f"Cleared {n} queued task{'s' if n != 1 else ''}.")
+
+
+# ── task actions ──────────────────────────────────────────────────────────────
+
+def _wait_for_dispatcher_action(request_id: str, *, timeout: float = 15.0) -> dict | None:
+    signal_dispatcher()
+    result = wait_dispatcher_request_result(request_id, timeout=timeout)
+    if result is not None:
+        cleanup_dispatcher_request_result(request_id)
+    return result
+
+
+def _die_task_action(exc: Exception) -> None:
+    die(str(exc))
+
+
+def cmd_retry(args) -> None:
+    try:
+        task_id, task = retry_failed_task(args.task_id)
+    except (LookupError, ValueError, FileExistsError) as exc:
+        _die_task_action(exc)
+    signal_dispatcher()
+    print(colour("✓", GREEN),
+          f"Retried task {colour(task_id, CYAN)} at priority {task.get('priority', 0)}.")
+
+
+def cmd_defer(args) -> None:
+    if is_dispatcher_running():
+        request_id = submit_dispatcher_request("preempt", task_ref=args.task_id)
+        result = _wait_for_dispatcher_action(request_id, timeout=15.0)
+        if result is None:
+            print(colour("·", GREY),
+                  f"Submitted defer request {request_id}; dispatcher has not replied yet.")
+            return
+        if not result.get("ok"):
+            die(result.get("message", "defer request failed"))
+        print(colour("✓", GREEN), result.get("message", "task deferred"))
+        return
+
+    try:
+        task_id, _ = preempt_running_task_direct(args.task_id, fresh_enqueue_time=True)
+    except (LookupError, ValueError, FileExistsError, ProcessLookupError, OSError) as exc:
+        _die_task_action(exc)
+    print(colour("✓", GREEN), f"Deferred task {colour(task_id, CYAN)} back to the queue.")
+
+
+def cmd_kill_task(args) -> None:
+    if is_dispatcher_running():
+        request_id = submit_dispatcher_request("kill_task", task_ref=args.task_id)
+        result = _wait_for_dispatcher_action(request_id, timeout=15.0)
+        if result is None:
+            print(colour("·", GREY),
+                  f"Submitted kill request {request_id}; dispatcher has not replied yet.")
+            return
+        if not result.get("ok"):
+            die(result.get("message", "kill request failed"))
+        print(colour("✓", GREEN), result.get("message", "task killed"))
+        return
+
+    try:
+        task_id, state, _ = kill_task_direct(args.task_id)
+    except (LookupError, ValueError, ProcessLookupError, OSError) as exc:
+        _die_task_action(exc)
+    print(colour("✓", GREEN),
+          f"Killed {state} task {colour(task_id, CYAN)}; moved to failed without a return code.")
+
+
+def cmd_priority(args) -> None:
+    if is_dispatcher_running():
+        request_id = submit_dispatcher_request(
+            "set_priority",
+            task_ref=args.task_id,
+            priority=args.priority,
+        )
+        result = _wait_for_dispatcher_action(request_id, timeout=10.0)
+        if result is None:
+            print(colour("·", GREY),
+                  f"Submitted priority request {request_id}; dispatcher has not replied yet.")
+            return
+        if not result.get("ok"):
+            die(result.get("message", "priority request failed"))
+        print(colour("✓", GREEN), result.get("message", "priority changed"))
+        return
+
+    try:
+        task_id, old_priority, new_priority = set_queued_task_priority(args.task_id, args.priority)
+    except (LookupError, ValueError) as exc:
+        _die_task_action(exc)
+    print(colour("✓", GREEN),
+          f"Priority changed for {colour(task_id, CYAN)}: {old_priority} -> {new_priority}.")
+
+
+# ── kill-gpu ──────────────────────────────────────────────────────────────────
+
+def _kill_proc_group(pid: int) -> None:
+    """Terminate a task process tree."""
+    kill_process_tree(pid, term_timeout=6.0)
+
+
+def cmd_kill_gpu(args) -> None:
+    try:
+        cfg = validate_config(load_config())
+    except FileNotFoundError as e:
+        die(str(e))
+    except ValueError as e:
+        die(f"Invalid config: {e}")
+
+    if args.gpu not in cfg["gpu_indices"]:
+        die(f"GPU {args.gpu} is not in the managed list {cfg['gpu_indices']}.")
+
+    cfg["gpu_indices"].remove(args.gpu)
+    save_config(cfg)
+    print(colour("✓", GREEN),
+          f"Removed GPU {args.gpu} from managed list → {cfg['gpu_indices']}.")
+
+    dispatcher_pid = read_dispatcher_pid()
+    if dispatcher_pid:
+        try:
+            os.kill(dispatcher_pid, signal.SIGHUP)
+            print(colour("✓", GREEN),
+                  "Signalled dispatcher to release GPU and re-enqueue any running task.")
+            return
+        except ProcessLookupError:
+            dispatcher_pid = None  # fall through to manual handling
+
+    # Dispatcher is not running; handle kill + re-enqueue manually (no race).
+    running_tasks = list_tasks(RUNNING_DIR)
+    matching = [t for t in running_tasks if args.gpu in _task_gpu_indices(t)]
+    for task in matching:
+        pid = task.get("pid")
+        if pid:
+            _kill_proc_group(pid)
+        # Preserve enqueue_time so each task retains its original queue position.
+        requeue = task_to_queue_record(task)
+        write_task(QUEUE_DIR, requeue)
+        task["_path"].unlink(missing_ok=True)
+        print(colour("✓", GREEN),
+              f"Re-enqueued task {colour(task['id'], CYAN)} from {_task_gpu_label(task)}.")
+    if not matching:
+        print(colour("·", GREY), f"No running task found on GPU {args.gpu}.")
+
+
+# ── add-gpu ───────────────────────────────────────────────────────────────────
+
+def cmd_add_gpu(args) -> None:
+    try:
+        cfg = validate_config(load_config())
+    except FileNotFoundError as e:
+        die(str(e))
+    except ValueError as e:
+        die(f"Invalid config: {e}")
+
+    if args.gpu in cfg["gpu_indices"]:
+        print(colour("·", GREY),
+              f"GPU {args.gpu} is already in the managed list {cfg['gpu_indices']}.")
+        return
+
+    cfg["gpu_indices"].append(args.gpu)
+    cfg["gpu_indices"].sort()
+    save_config(cfg)
+    print(colour("✓", GREEN),
+          f"Added GPU {args.gpu} to managed list → {cfg['gpu_indices']}.")
+
+    dispatcher_pid = read_dispatcher_pid()
+    if dispatcher_pid:
+        try:
+            os.kill(dispatcher_pid, signal.SIGHUP)
+            print(colour("✓", GREEN), "Signalled dispatcher to start managing the new GPU.")
+        except ProcessLookupError:
+            print(colour("·", GREY),
+                  "Dispatcher exited; GPU will be managed when it next starts.")
+    else:
+        print(colour("·", GREY),
+              f"Dispatcher is not running; GPU {args.gpu} will be managed when it starts.")
+
+
+# ── nuke ──────────────────────────────────────────────────────────────────────
+
+def cmd_nuke(args) -> None:
+    if not args.yes:
+        print(colour("This will:", YELLOW, BOLD))
+        print("  • Stop the dispatcher")
+        print("  • Kill all running tasks")
+        print("  • Clear the entire queue")
+        print()
+        try:
+            confirm = input("Proceed? [y/N] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            print(colour("Aborted.", GREY))
+            return
+        if confirm not in ("y", "yes"):
+            print(colour("Aborted.", GREY))
+            return
+
+    # 1. Stop dispatcher first so it can't race us on running/ files.
+    if not _stop_dispatcher(force=True, timeout=10.0):
+        die("Could not stop dispatcher; refusing to race running task files.")
+
+    # 2. Kill any remaining task processes and move them to failed/.
+    running_tasks = list_tasks(RUNNING_DIR)
+    for task in running_tasks:
+        pid     = task.get("pid")
+        task_id = task["id"]
+        gpu_label = _task_gpu_label(task)
+        if pid:
+            _kill_proc_group(pid)
+        print(colour("✓", GREEN),
+              f"Terminated task {colour(task_id, CYAN)} (PID {pid}) on {gpu_label}.")
+        result = {k: v for k, v in task.items() if not k.startswith("_")}
+        result["end_time"]     = datetime.now(tz=timezone.utc).isoformat()
+        result["returncode"]   = -9
+        result["failure_note"] = "killed via gpu-scheduler nuke"
+        write_task(FAILED_DIR, result)
+        task["_path"].unlink(missing_ok=True)
+
+    # 3. Clear queue.
+    queue_files = list(QUEUE_DIR.glob("*.json"))
+    for f in queue_files:
+        f.unlink(missing_ok=True)
+    if queue_files:
+        n = len(queue_files)
+        print(colour("✓", GREEN),
+              f"Cleared {n} queued task{'s' if n != 1 else ''}.")
+
+    print(colour("✓", GREEN), "Nuke complete.")
+
+
+# ── stats ─────────────────────────────────────────────────────────────────────
+
+def _parse_iso(value) -> datetime | None:
+    try:
+        dt = datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
+def _stats_gpu_count(task: dict) -> int:
+    if is_cpu_task(task):
+        return 0
+    indices = _task_gpu_indices(task)
+    if indices:
+        return len(indices)
+    try:
+        return max(1, int(task.get("gpu_count", 1) or 1))
+    except (TypeError, ValueError):
+        return 1
+
+
+def collect_stats(days: float) -> dict:
+    """Aggregate done/ + failed/ history from the last `days` days."""
+    now = datetime.now(tz=timezone.utc)
+    cutoff = now - timedelta(days=days)
+
+    n_done = n_failed = n_killed = 0
+    waits: list[float] = []
+    runtimes: list[float] = []
+    gpu_hours_total = 0.0
+    util_weighted = 0.0
+    util_runtime = 0.0
+    util_tasks = 0
+    per_gpu: dict[int, dict] = defaultdict(lambda: {"hours": 0.0, "tasks": 0})
+    per_day: dict[str, float] = defaultdict(float)
+    per_script: dict[str, dict] = defaultdict(
+        lambda: {"runs": 0, "failures": 0, "gpu_hours": 0.0,
+                 "runtimes": [], "peak_mem_mib": None}
+    )
+
+    for state, tasks in (("done", list_tasks(DONE_DIR)), ("failed", list_tasks(FAILED_DIR))):
+        for task in tasks:
+            end = _parse_iso(task.get("end_time"))
+            if end is None or end < cutoff:
+                continue
+            if state == "done":
+                n_done += 1
+            elif "returncode" in task:
+                n_failed += 1
+            else:
+                n_killed += 1
+
+            start = _parse_iso(task.get("start_time"))
+            enqueue = _parse_iso(task.get("enqueue_time"))
+            runtime = (end - start).total_seconds() if start else None
+            if runtime is not None and runtime >= 0:
+                runtimes.append(runtime)
+            else:
+                runtime = None
+            if start and enqueue:
+                wait = (start - enqueue).total_seconds()
+                if wait >= 0:
+                    waits.append(wait)
+
+            gpu_count = _stats_gpu_count(task)
+            script = task.get("script", "?")
+            entry = per_script[script]
+            entry["runs"] += 1
+            if state == "failed":
+                entry["failures"] += 1
+
+            if runtime is not None:
+                gpu_hours = runtime * gpu_count / 3600.0
+                gpu_hours_total += gpu_hours
+                entry["gpu_hours"] += gpu_hours
+                entry["runtimes"].append(runtime)
+                per_day[end.strftime("%Y-%m-%d")] += gpu_hours
+                for idx in _task_gpu_indices(task):
+                    per_gpu[idx]["hours"] += runtime / 3600.0
+                    per_gpu[idx]["tasks"] += 1
+
+            metrics = task.get("gpu_metrics") or {}
+            util = metrics.get("avg_util")
+            if isinstance(util, (int, float)) and runtime:
+                util_weighted += util * runtime
+                util_runtime += runtime
+                util_tasks += 1
+            peak = metrics.get("peak_mem_mib")
+            if isinstance(peak, (int, float)):
+                prev = entry["peak_mem_mib"]
+                entry["peak_mem_mib"] = max(prev, peak) if prev is not None else peak
+
+    def dist(values: list[float]) -> dict | None:
+        if not values:
+            return None
+        return {
+            "avg": sum(values) / len(values),
+            "p50": statistics.median(values),
+            "max": max(values),
+        }
+
+    scripts = [
+        {
+            "script": script,
+            "runs": e["runs"],
+            "failures": e["failures"],
+            "gpu_hours": round(e["gpu_hours"], 2),
+            "avg_runtime": (sum(e["runtimes"]) / len(e["runtimes"])) if e["runtimes"] else None,
+            "peak_mem_mib": e["peak_mem_mib"],
+        }
+        for script, e in per_script.items()
+    ]
+    scripts.sort(key=lambda s: (-s["gpu_hours"], -s["runs"]))
+
+    total = n_done + n_failed + n_killed
+    return {
+        "days": days,
+        "done": n_done,
+        "failed": n_failed,
+        "killed": n_killed,
+        "total": total,
+        "success_rate": (n_done / total) if total else None,
+        "gpu_hours_total": round(gpu_hours_total, 2),
+        "wait": dist(waits),
+        "runtime": dist(runtimes),
+        "avg_util": (util_weighted / util_runtime) if util_runtime else None,
+        "util_tasks": util_tasks,
+        "per_gpu": {
+            idx: {"hours": round(v["hours"], 2), "tasks": v["tasks"]}
+            for idx, v in sorted(per_gpu.items())
+        },
+        "per_day": [
+            {"date": day, "gpu_hours": round(hours, 2)}
+            for day, hours in sorted(per_day.items())
+        ],
+        "per_script": scripts,
+    }
+
+
+def _stats_bar(value: float, peak: float, width: int = 22) -> str:
+    if peak <= 0:
+        return ""
+    return "#" * max(1 if value > 0 else 0, round(value / peak * width))
+
+
+def _short_script(path: str) -> str:
+    parts = Path(path).parts
+    return str(Path(*parts[-2:])) if len(parts) >= 2 else path
+
+
+def cmd_stats(args) -> None:
+    stats = collect_stats(args.days)
+
+    if args.json:
+        import json
+        print(json.dumps(stats, indent=2))
+        return
+
+    window = f"last {args.days:g} day{'s' if args.days != 1 else ''}"
+    if not stats["total"]:
+        print(colour(f"No finished tasks in the {window}.", GREY))
+        return
+
+    rate = stats["success_rate"]
+    rate_str = f"{rate * 100:.1f}%" if rate is not None else "-"
+    rate_col = GREEN if (rate or 0) >= 0.9 else YELLOW if (rate or 0) >= 0.5 else RED
+    print(colour(f"GPU scheduler stats — {window}", BOLD))
+    print(f"  Tasks      : {stats['total']}  "
+          f"({colour(str(stats['done']) + ' done', GREEN)} · "
+          f"{colour(str(stats['failed']) + ' failed', RED)} · "
+          f"{stats['killed']} killed)   success {colour(rate_str, rate_col)}")
+    print(f"  GPU-hours  : {stats['gpu_hours_total']:.1f}")
+
+    def dist_line(label: str, d: dict | None) -> None:
+        if not d:
+            return
+        print(f"  {label:<11}: avg {format_duration(d['avg'])} · "
+              f"p50 {format_duration(d['p50'])} · max {format_duration(d['max'])}")
+
+    dist_line("Queue wait", stats["wait"])
+    dist_line("Runtime", stats["runtime"])
+    if stats["avg_util"] is not None:
+        print(f"  Utilization: {stats['avg_util']:.0f}% "
+              f"(runtime-weighted, {stats['util_tasks']} sampled tasks)")
+
+    if stats["per_gpu"]:
+        print()
+        print(colour("  Per GPU:", BOLD))
+        peak = max(v["hours"] for v in stats["per_gpu"].values())
+        for idx, v in stats["per_gpu"].items():
+            bar = _stats_bar(v["hours"], peak)
+            print(f"    GPU {idx:<3} {v['hours']:>7.1f} h  {bar:<22}  {v['tasks']} task{'s' if v['tasks'] != 1 else ''}")
+
+    days_shown = stats["per_day"][-14:]
+    if days_shown:
+        print()
+        print(colour("  GPU-hours by day:", BOLD))
+        peak = max(d["gpu_hours"] for d in days_shown)
+        for d in days_shown:
+            bar = _stats_bar(d["gpu_hours"], peak)
+            print(f"    {d['date']}  {bar:<22}  {d['gpu_hours']:.1f}")
+
+    if stats["per_script"]:
+        print()
+        print(colour("  Top scripts by GPU-hours:", BOLD))
+        for s in stats["per_script"][:10]:
+            avg_rt = format_duration(s["avg_runtime"]) if s["avg_runtime"] else "-"
+            fail_str = (
+                colour(f"{s['failures']} fail", RED) if s["failures"] else "0 fail"
+            )
+            mem_str = ""
+            if s["peak_mem_mib"] is not None:
+                mem_str = f"  peak mem {s['peak_mem_mib'] / 1024:.1f} GiB"
+            print(f"    {_short_script(s['script']):<40} {s['gpu_hours']:>7.1f} h  "
+                  f"{s['runs']:>3} runs  {fail_str}  avg {avg_rt}{mem_str}")
+    print()
+
+
+# ── gc ────────────────────────────────────────────────────────────────────────
+
+def cmd_gc(args) -> None:
+    """Prune finished task history, logs, and stale temp files."""
+    if args.days < 0:
+        die("--days must be >= 0")
+    cutoff = datetime.now(tz=timezone.utc) - timedelta(days=args.days)
+    cutoff_ts = cutoff.timestamp()
+
+    # Done-task records may be live dependency targets for queued tasks;
+    # pruning one would cascade-fail its dependents as "dependency missing".
+    protected: set[str] = set()
+    for task in list_tasks(QUEUE_DIR):
+        protected.update(task.get("depends_on") or [])
+
+    doomed: list[Path] = []
+    n_records = n_orphan_logs = n_stale = 0
+
+    for state_dir in (DONE_DIR, FAILED_DIR):
+        for task in list_tasks(state_dir):
+            if task["id"] in protected:
+                continue
+            end = _parse_iso(task.get("end_time"))
+            if end is None or end >= cutoff:
+                continue
+            doomed.append(task["_path"])
+            n_records += 1
+            for extra in (LOGS_DIR / f"{task['id']}.log",
+                          EXIT_CODES_DIR / f"{task['id']}.rc"):
+                if extra.exists():
+                    doomed.append(extra)
+
+    # Task logs and exit codes whose task JSON is gone from every state dir.
+    live_ids = task_ids_in_all_state_dirs()
+    for log in list(LOGS_DIR.glob("*.log")) + list(EXIT_CODES_DIR.glob("*.rc")):
+        if log.stem in live_ids or log.stem.startswith("warmup"):
+            continue
+        try:
+            if log.stat().st_mtime < cutoff_ts:
+                doomed.append(log)
+                n_orphan_logs += 1
+        except OSError:
+            continue
+
+    # Leftover atomic-write temp files from crashed writers (older than a day).
+    tmp_cutoff = time.time() - 86400
+    for directory in ALL_DIRS:
+        for tmp in directory.glob(".*.tmp"):
+            try:
+                if tmp.stat().st_mtime < tmp_cutoff:
+                    doomed.append(tmp)
+                    n_stale += 1
+            except OSError:
+                continue
+
+    freed = 0
+    for path in doomed:
+        try:
+            freed += path.stat().st_size
+        except OSError:
+            pass
+
+    if not doomed:
+        print(colour("·", GREY), f"Nothing to clean (history younger than {args.days:g} days).")
+        return
+
+    if not args.dry_run:
+        for path in doomed:
+            path.unlink(missing_ok=True)
+
+    verb = "Would remove" if args.dry_run else "Removed"
+    mb = freed / (1024 * 1024)
+    print(colour("✓", GREEN),
+          f"{verb} {n_records} finished task record{'s' if n_records != 1 else ''} "
+          f"(older than {args.days:g} days), {n_orphan_logs} orphaned log/exit-code "
+          f"file{'s' if n_orphan_logs != 1 else ''}, {n_stale} stale temp "
+          f"file{'s' if n_stale != 1 else ''} — {mb:.1f} MiB{' (dry run)' if args.dry_run else ' freed'}.")
+
+
+# ── wait ──────────────────────────────────────────────────────────────────────
+
+def cmd_wait(args) -> None:
+    try:
+        ids = [resolve_task_id_prefix(ref) for ref in args.task_ids]
+    except (LookupError, ValueError) as exc:
+        die(str(exc))
+
+    deadline = None
+    if args.timeout is not None:
+        try:
+            deadline = time.time() + parse_duration(args.timeout)
+        except ValueError as exc:
+            die(str(exc))
+
+    pending = list(dict.fromkeys(ids))
+    failures = 0
+    while pending:
+        for task_id in list(pending):
+            done_path = DONE_DIR / f"{task_id}.json"
+            failed_path = FAILED_DIR / f"{task_id}.json"
+            if done_path.exists():
+                print(colour("✓", GREEN), f"{task_id} done")
+                pending.remove(task_id)
+            elif failed_path.exists():
+                task = read_task(failed_path) or {}
+                rc = task.get("returncode")
+                reason = f"rc={rc}" if rc is not None else "killed"
+                note = task.get("failure_note")
+                suffix = f"  [{note}]" if note else ""
+                print(colour("✗", RED), f"{task_id} FAILED ({reason}){suffix}")
+                pending.remove(task_id)
+                failures += 1
+            elif not (QUEUE_DIR / f"{task_id}.json").exists() \
+                    and not (RUNNING_DIR / f"{task_id}.json").exists():
+                print(colour("✗", RED), f"{task_id} disappeared (deleted?)")
+                pending.remove(task_id)
+                failures += 1
+        if not pending:
+            break
+        if deadline is not None and time.time() >= deadline:
+            print(colour("✗", RED),
+                  f"timed out waiting for {len(pending)} task{'s' if len(pending) != 1 else ''}: "
+                  + " ".join(pending), file=sys.stderr)
+            sys.exit(124)
+        time.sleep(0.5)
+
+    sys.exit(1 if failures else 0)
+
+
+# ── CLI wiring ────────────────────────────────────────────────────────────────
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="gpu-scheduler",
+        description="Manage the GPU scheduler daemon.",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    # init
+    p_init = sub.add_parser("init", help="Initialise config and directory structure.")
+    p_init.add_argument("--gpus", required=True,
+                        help="Comma-separated GPU indices, e.g. 0,1,2")
+    p_init.add_argument("--warmup-gb", type=float, default=None,
+                        help="Warmup matmul size in GB. Default 0 = auto (80%% of free GPU VRAM).")
+    p_init.add_argument("--no-warmup", action="store_true",
+                        help="Disable the idle-GPU warmup matmul entirely.")
+    p_init.add_argument("--poll", type=float, default=None,
+                        help=f"Dispatcher poll interval in seconds (default: {DEFAULT_CONFIG['poll_interval']})")
+    p_init.add_argument("--tasks-per-gpu", type=int, default=None,
+                        help=f"Max concurrent tasks per GPU (default: {DEFAULT_CONFIG['tasks_per_gpu']}).")
+    p_init.add_argument("--ready-free-frac", type=float, default=None,
+                        help=f"Required free VRAM fraction before first task on an idle GPU (default: {DEFAULT_CONFIG['gpu_ready_free_frac']}).")
+    p_init.add_argument("--ready-timeout", type=float, default=None,
+                        help=f"Seconds to wait for idle GPU memory to release (default: {DEFAULT_CONFIG['gpu_ready_timeout']}).")
+    p_init.add_argument("--drain-after", default=None, metavar="DUR",
+                        help="How long a blocked multi-GPU task waits before GPUs are "
+                             "drained for it (e.g. 10m, 600; 'off' disables; "
+                             f"default: {DEFAULT_CONFIG['multi_gpu_drain_sec']:.0f}s).")
+
+    # start
+    p_start = sub.add_parser("start", help="Start the dispatcher daemon.")
+    p_start.add_argument("--foreground", "-f", action="store_true",
+                         help="Run in the foreground (don't daemonise).")
+
+    # stop
+    sub.add_parser("stop", help="Stop the dispatcher daemon.")
+
+    # restart
+    p_restart = sub.add_parser("restart", help="Restart the dispatcher daemon.")
+    p_restart.add_argument("--foreground", "-f", action="store_true")
+
+    # status
+    sub.add_parser("status", help="Show dispatcher and queue status.")
+
+    # logs
+    p_logs = sub.add_parser("logs", help="Print dispatcher log or a task's log.")
+    p_logs.add_argument("task_id", nargs="?", default=None,
+                        help="Task ID (prefix OK). Omit for dispatcher log.")
+    p_logs.add_argument("-n", type=int, default=100,
+                        help="Lines to show from the log tail (default: 100).")
+    p_logs.add_argument("-f", "--follow", action="store_true",
+                        help="Follow the log as it grows (like tail -f).")
+
+    # pause / resume
+    sub.add_parser("pause", help="Pause dispatching of queued tasks.")
+    sub.add_parser("resume", help="Resume dispatching of queued tasks.")
+
+    # clear-queue
+    sub.add_parser("clear-queue", help="Delete all pending tasks from the queue.")
+
+    # retry
+    p_retry = sub.add_parser("retry", help="Move a failed task back to the queue.")
+    p_retry.add_argument("task_id", metavar="TASK_ID", help="Failed task ID or unique prefix.")
+
+    # defer / preempt
+    p_defer = sub.add_parser(
+        "defer",
+        help="Kill a running task and put it back in the queue.",
+    )
+    p_defer.add_argument("task_id", metavar="TASK_ID", help="Running task ID or unique prefix.")
+    p_preempt = sub.add_parser(
+        "preempt",
+        help="Alias for defer.",
+    )
+    p_preempt.add_argument("task_id", metavar="TASK_ID", help="Running task ID or unique prefix.")
+
+    # kill task
+    p_kill = sub.add_parser(
+        "kill",
+        help="Kill a queued/running task and move it to failed without a return code.",
+    )
+    p_kill.add_argument("task_id", metavar="TASK_ID", help="Queued/running task ID or unique prefix.")
+
+    # priority
+    p_priority = sub.add_parser("priority", help="Change a queued task's priority.")
+    p_priority.add_argument("task_id", metavar="TASK_ID", help="Queued task ID or unique prefix.")
+    p_priority.add_argument("priority", type=int, metavar="PRIORITY",
+                            help="New integer priority; lower runs first.")
+    p_set_priority = sub.add_parser("set-priority", help="Alias for priority.")
+    p_set_priority.add_argument("task_id", metavar="TASK_ID", help="Queued task ID or unique prefix.")
+    p_set_priority.add_argument("priority", type=int, metavar="PRIORITY",
+                                help="New integer priority; lower runs first.")
+
+    # kill-gpu
+    p_kill_gpu = sub.add_parser(
+        "kill-gpu",
+        help="Kill any running task on a GPU (re-enqueuing it) and remove it from the managed list.",
+    )
+    p_kill_gpu.add_argument("gpu", type=int, metavar="GPU_INDEX",
+                            help="GPU index to release.")
+
+    # add-gpu
+    p_add_gpu = sub.add_parser("add-gpu", help="Add a GPU to the managed list.")
+    p_add_gpu.add_argument("gpu", type=int, metavar="GPU_INDEX",
+                           help="GPU index to add.")
+
+    # stats
+    p_stats = sub.add_parser("stats", help="Usage statistics from task history.")
+    p_stats.add_argument("--days", type=float, default=7.0, metavar="N",
+                         help="History window in days (default: 7).")
+    p_stats.add_argument("--json", action="store_true",
+                         help="Emit machine-readable JSON.")
+
+    # gc
+    p_gc = sub.add_parser(
+        "gc",
+        help="Prune old done/failed task records, their logs, and stale temp files.",
+    )
+    p_gc.add_argument("--days", type=float, default=30.0, metavar="N",
+                      help="Remove finished tasks older than N days (default: 30).")
+    p_gc.add_argument("--dry-run", "-n", action="store_true",
+                      help="Report what would be removed without deleting anything.")
+
+    # wait
+    p_wait = sub.add_parser(
+        "wait",
+        help="Block until the given tasks finish; exit 0 only if all succeeded.",
+    )
+    p_wait.add_argument("task_ids", nargs="+", metavar="TASK_ID",
+                        help="Task ID(s) or unique prefixes to wait for.")
+    p_wait.add_argument("--timeout", "-t", default=None, metavar="DUR",
+                        help="Give up after DUR (e.g. 90s, 15m, 2h); exit 124.")
+
+    # nuke
+    p_nuke = sub.add_parser(
+        "nuke",
+        help="Kill all running tasks, clear the queue, and stop the dispatcher.",
+    )
+    p_nuke.add_argument("--yes", "-y", action="store_true",
+                        help="Skip confirmation prompt.")
+
+    args = parser.parse_args()
+
+    dispatch = {
+        "init":        cmd_init,
+        "start":       cmd_start,
+        "stop":        cmd_stop,
+        "restart":     cmd_restart,
+        "status":      cmd_status,
+        "logs":        cmd_logs,
+        "pause":       cmd_pause,
+        "resume":      cmd_resume,
+        "clear-queue": cmd_clear_queue,
+        "retry":       cmd_retry,
+        "defer":       cmd_defer,
+        "preempt":     cmd_defer,
+        "kill":        cmd_kill_task,
+        "priority":    cmd_priority,
+        "set-priority": cmd_priority,
+        "kill-gpu":    cmd_kill_gpu,
+        "add-gpu":     cmd_add_gpu,
+        "stats":       cmd_stats,
+        "gc":          cmd_gc,
+        "wait":        cmd_wait,
+        "nuke":        cmd_nuke,
+    }
+    dispatch[args.command](args)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,9 @@
+torch
+transformers
+sentence-transformers
+datasets
+nltk
+numpy
+scipy
+tqdm
+vllm

@@ -1,0 +1,18 @@
+# Semantic span | KMeans | fixed_diverse (non-lazy walk) | best-of-n.
+generation:
+  sampling_method: best-of-n
+  num_candidates: 64
+watermark:
+  mode: kmeans_fixed_diverse
+  embedder: AbeHou/SemStamp-c4-sbert
+  sp_dim: 8
+  lmbd: 0.25
+  margin: 0.0
+  cc_path: artifacts/centers/cc_semspan_spacy_max15_win5_k8.pt
+segmentation:
+  type: semspan
+  backend: spacy
+  semcut_max_words: 15
+  semcut_window: 5
+runtime:
+  vllm_utilization: 0.85

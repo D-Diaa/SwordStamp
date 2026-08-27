@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+"""
+gpu-enqueue — add a bash script to the GPU scheduler queue.
+
+Usage
+-----
+  gpu-enqueue SCRIPT [--workdir DIR] [--env KEY=VAL ...] [--priority N]
+              [--gpus N | --cpu] [--exclusive] [--timeout DUR] [--retries N] [--after ID]
+              [--array N|A-B] [--follow]
+
+Arguments
+---------
+  SCRIPT          Path to a bash script.  Relative paths are resolved to
+                  absolute paths at enqueue time.
+  --workdir DIR   Working directory for the script (default: current directory).
+  --env KEY=VAL   Set an extra environment variable for the script.
+                  Repeatable.  CUDA_VISIBLE_DEVICES is set automatically
+                  by the dispatcher and should not be specified here.
+  --priority N    Integer priority; lower numbers run first (default: 0).
+                  Negative priorities are allowed (run before default tasks).
+  --gpus N        Number of GPUs required by this task (default: 1).
+  --cpu           Run without reserving a GPU or GPU scheduler slot.
+  --exclusive     Reserve every scheduler slot on each requested GPU. Useful
+                  for a single-GPU task when tasks_per_gpu is greater than 1.
+  --timeout DUR   Kill the task if it runs longer than DUR
+                  (seconds, or duration like 90s / 15m / 2h / 1h30m).
+  --retries N     Auto-requeue the task up to N times if it exits nonzero
+                  or times out (default: 0).
+  --array N|A-B   Enqueue a job array: N tasks (indices 0..N-1) or an inclusive
+                  index range A-B.  Each task gets GPU_SCHEDULER_ARRAY_INDEX
+                  and GPU_SCHEDULER_ARRAY_SIZE in its environment, and the
+                  literal token {i} in --env values is replaced by the index.
+                  Prints one task ID per line.  Not compatible with --follow.
+  --follow        Stay attached after enqueueing: stream the task's log to
+                  stdout until it finishes, then exit with the task's return
+                  code (status lines go to stderr). Ctrl-C detaches without
+                  stopping the task.
+
+Output
+------
+Prints the task ID on stdout.  The dispatcher dequeues it automatically.
+
+Examples
+--------
+  # Enqueue a training script in the current directory
+  gpu-enqueue train.sh
+
+  # Enqueue with an explicit working directory
+  gpu-enqueue /abs/path/to/train.sh --workdir /data/experiments/run1
+
+  # High priority (runs before other tasks at priority 0)
+  gpu-enqueue urgent.sh --priority -1
+
+  # Request two GPUs for one task
+  gpu-enqueue train_ddp.sh --gpus 2
+
+  # Give a single-GPU task the GPU to itself
+  gpu-enqueue memory_hungry_train.sh --exclusive
+
+  # Run a CPU-only task through the same scheduler queue
+  gpu-enqueue preprocess.sh --cpu
+
+  # Pass extra environment variables
+  gpu-enqueue eval.sh --env MODEL_PATH=/checkpoints/best.pt --env BATCH_SIZE=64
+
+Environment variables set by the dispatcher (available inside the script)
+------------------------------------------------------------------------
+  CUDA_VISIBLE_DEVICES      – assigned physical GPU index/indices, or empty for --cpu
+  GPU_SCHEDULER_TASK_ID     – task ID
+  GPU_SCHEDULER_GPU_INDEX   – first physical GPU index (legacy alias), or empty for --cpu
+  GPU_SCHEDULER_GPU_INDICES – comma-separated physical GPU indices
+  GPU_SCHEDULER_GPU_COUNT   – number of assigned GPUs
+"""
+
+import argparse
+import os
+import sys
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+# ── Bootstrap ─────────────────────────────────────────────────────────────────
+_LIB = Path.home() / ".gpu-scheduler" / "lib"
+sys.path.insert(0, str(_LIB))
+
+from common import (
+    QUEUE_DIR, RUNNING_DIR, DONE_DIR, FAILED_DIR, LOGS_DIR, SCHEDULER_HOME,
+    make_task_id, write_task, read_task, resolve_task_id_prefix,
+    load_config, validate_config,
+    parse_duration, signal_dispatcher,
+    colour, YELLOW, BOLD, GREEN, RED, CYAN, GREY, die,
+)
+
+
+def _note(text: str, *codes: str) -> None:
+    """Status line on stderr; stdout stays clean for the task ID + log."""
+    print(colour(text, *codes), file=sys.stderr, flush=True)
+
+
+def follow_task(task_id: str) -> int:
+    """Stream a task's log until it finishes; return its exit code.
+
+    Ctrl-C detaches (the task keeps running) and returns 130.
+    """
+    log_path = LOGS_DIR / f"{task_id}.log"
+    offset = 0
+    last_state = None
+
+    def emit_new_log() -> None:
+        nonlocal offset
+        if not log_path.exists():
+            return
+        try:
+            with open(log_path, "rb") as fh:
+                fh.seek(offset)
+                chunk = fh.read()
+        except OSError:
+            return
+        if chunk:
+            offset += len(chunk)
+            sys.stdout.buffer.write(chunk)
+            sys.stdout.buffer.flush()
+
+    try:
+        while True:
+            if (DONE_DIR / f"{task_id}.json").exists() \
+                    or (FAILED_DIR / f"{task_id}.json").exists():
+                state = "finished"
+            elif (RUNNING_DIR / f"{task_id}.json").exists():
+                state = "running"
+            elif (QUEUE_DIR / f"{task_id}.json").exists():
+                state = "queued"
+            else:
+                state = "gone"
+
+            if state != last_state:
+                if state == "queued":
+                    _note(f"[{task_id}] waiting in queue …", GREY)
+                elif state == "running":
+                    task = read_task(RUNNING_DIR / f"{task_id}.json") or {}
+                    indices = task.get("gpu_indices") or []
+                    where = ("GPU " + ",".join(map(str, indices))) if indices else "CPU"
+                    _note(f"[{task_id}] started on {where}", CYAN)
+                last_state = state
+
+            emit_new_log()
+
+            if state == "finished":
+                emit_new_log()   # drain anything written between checks
+                done = read_task(DONE_DIR / f"{task_id}.json")
+                if done is not None:
+                    _note(f"[{task_id}] done (rc=0)", GREEN, BOLD)
+                    return 0
+                failed = read_task(FAILED_DIR / f"{task_id}.json") or {}
+                rc = failed.get("returncode")
+                note = failed.get("failure_note", "")
+                suffix = f" [{note}]" if note else ""
+                _note(f"[{task_id}] FAILED (rc={rc if rc is not None else '-'}){suffix}", RED, BOLD)
+                if isinstance(rc, int) and 0 < rc < 256:
+                    return rc
+                return 1
+            if state == "gone":
+                _note(f"[{task_id}] task disappeared (deleted?)", RED, BOLD)
+                return 1
+
+            time.sleep(0.3)
+    except KeyboardInterrupt:
+        _note(
+            f"\n[{task_id}] detached — task continues; "
+            f"reattach with: gpu-scheduler logs {task_id} -f",
+            YELLOW,
+        )
+        return 130
+
+
+ARRAY_MAX_TASKS = 10000
+
+
+def _parse_array_spec(spec: str) -> list[int]:
+    """'8' -> [0..7]; '2-5' -> [2, 3, 4, 5]."""
+    spec = spec.strip()
+    try:
+        if "-" in spec[1:]:
+            lo_s, _, hi_s = spec.partition("-")
+            lo, hi = int(lo_s), int(hi_s)
+            if lo < 0 or hi < lo:
+                raise ValueError
+            indices = list(range(lo, hi + 1))
+        else:
+            n = int(spec)
+            if n < 1:
+                raise ValueError
+            indices = list(range(n))
+    except ValueError:
+        die(f"--array must be a count like 8 or an index range like 2-5, got: {spec!r}")
+    if len(indices) > ARRAY_MAX_TASKS:
+        die(f"--array too large ({len(indices)} tasks; max {ARRAY_MAX_TASKS})")
+    return indices
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="gpu-enqueue",
+        description="Enqueue a bash script for GPU execution.",
+    )
+    parser.add_argument("script", help="Path to the bash script to run.")
+    parser.add_argument("--workdir", "-d", default=None,
+                        help="Working directory (default: current directory).")
+    parser.add_argument("--env", "-e", action="append", default=[],
+                        metavar="KEY=VAL",
+                        help="Extra environment variable (repeatable).")
+    parser.add_argument("--priority", "-p", type=int, default=0,
+                        help="Priority (lower = runs first). Default: 0.")
+    resource = parser.add_mutually_exclusive_group()
+    resource.add_argument("--gpus", type=int, default=None,
+                          help="Number of GPUs required by this task. Default: 1.")
+    resource.add_argument("--cpu", action="store_true",
+                          help="Run without reserving a GPU or GPU scheduler slot.")
+    parser.add_argument("--exclusive", action="store_true",
+                        help="Reserve every scheduler slot on each requested GPU. "
+                             "Useful for one-GPU tasks when tasks-per-GPU is > 1.")
+    parser.add_argument("--timeout", "-t", default=None, metavar="DUR",
+                        help="Kill the task if it runs longer than DUR "
+                             "(seconds or e.g. 90s, 15m, 2h, 1h30m).")
+    parser.add_argument("--retries", "-r", type=int, default=0, metavar="N",
+                        help="Auto-requeue up to N times on nonzero exit or timeout "
+                             "(default: 0).")
+    parser.add_argument("--follow", "-f", action="store_true",
+                        help="Stay attached: stream the task's log until it finishes "
+                             "and exit with the task's return code. Ctrl-C detaches "
+                             "without stopping the task.")
+    parser.add_argument("--array", default=None, metavar="N|A-B",
+                        help="Enqueue a job array: N tasks (indices 0..N-1) or an "
+                             "inclusive index range A-B. Each task gets "
+                             "GPU_SCHEDULER_ARRAY_INDEX / GPU_SCHEDULER_ARRAY_SIZE in its "
+                             "environment, and the literal token {i} in --env values is "
+                             "replaced by the task's index. Prints one task ID per line.")
+    parser.add_argument("--after", "-a", action="append", default=[],
+                        metavar="TASK_ID",
+                        help="Task ID(s) this task depends on (repeatable; comma-separated "
+                             "allowed). The task is not dispatched until all of them complete "
+                             "successfully; if any fails, this task is cascade-failed.")
+    args = parser.parse_args()
+
+    gpu_count = 0 if args.cpu else (args.gpus if args.gpus is not None else 1)
+
+    if not args.cpu and gpu_count < 1:
+        die("--gpus must be >= 1")
+    if args.cpu and args.exclusive:
+        die("--exclusive cannot be combined with --cpu")
+
+    timeout_seconds = None
+    if args.timeout is not None:
+        try:
+            timeout_seconds = parse_duration(args.timeout)
+        except ValueError as exc:
+            die(str(exc))
+    if args.retries < 0:
+        die("--retries must be >= 0")
+    try:
+        cfg = validate_config(load_config())
+        managed_gpu_count = len(cfg.get("gpu_indices", []))
+        if not args.cpu and managed_gpu_count and gpu_count > managed_gpu_count:
+            die(
+                f"--gpus {gpu_count} exceeds the managed GPU pool "
+                f"({managed_gpu_count})"
+            )
+    except FileNotFoundError:
+        pass
+    except ValueError:
+        pass
+
+    # Resolve script path
+    script = Path(args.script).resolve()
+    if not script.exists():
+        die(f"Script not found: {script}")
+    if not script.is_file():
+        die(f"Not a file: {script}")
+
+    # Resolve workdir
+    workdir = Path(args.workdir).resolve() if args.workdir else Path.cwd()
+    if not workdir.is_dir():
+        die(f"Working directory not found: {workdir}")
+
+    # Parse --env entries
+    env_dict: dict[str, str] = {}
+    for entry in args.env:
+        if "=" not in entry:
+            die(f"--env must be KEY=VAL, got: {entry!r}")
+        k, _, v = entry.partition("=")
+        k = k.strip()
+        if k == "CUDA_VISIBLE_DEVICES" or k.startswith("GPU_SCHEDULER_"):
+            die(f"{k} is managed by gpu-scheduler and cannot be set with --env")
+        env_dict[k.strip()] = v
+
+    # Ensure queue directory exists (works even if dispatcher isn't running)
+    QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Dependencies: --after may be repeated and/or comma-separated.
+    depends_on: list[str] = []
+    for entry in args.after:
+        for raw in [x.strip() for x in entry.split(",") if x.strip()]:
+            try:
+                depends_on.append(resolve_task_id_prefix(raw))
+            except LookupError as exc:
+                die(f"--after dependency not found: {raw}")
+            except ValueError as exc:
+                die(str(exc))
+    depends_on = list(dict.fromkeys(depends_on))
+    for dep in depends_on:
+        if (FAILED_DIR / f"{dep}.json").exists():
+            print(colour(
+                f"warning: dependency {dep} has already failed — this task will be "
+                f"cascade-failed unless you `gpu-scheduler retry {dep}` first",
+                YELLOW), file=sys.stderr)
+
+    array_indices: list[int | None] = [None]
+    if args.array is not None:
+        if args.follow:
+            die("--follow cannot be combined with --array")
+        array_indices = _parse_array_spec(args.array)
+
+    # Strictly increasing enqueue_time per array element keeps FIFO order
+    # aligned with array index.
+    base_time = datetime.now(tz=timezone.utc)
+    task_ids: list[str] = []
+    seen_ids: set[str] = set()
+    for seq, index in enumerate(array_indices):
+        task_id = make_task_id()
+        while task_id in seen_ids or (QUEUE_DIR / f"{task_id}.json").exists():
+            task_id = make_task_id()
+        seen_ids.add(task_id)
+
+        env = dict(env_dict)
+        if index is not None:
+            env = {k: v.replace("{i}", str(index)) for k, v in env.items()}
+            env["GPU_SCHEDULER_ARRAY_INDEX"] = str(index)
+            env["GPU_SCHEDULER_ARRAY_SIZE"] = str(len(array_indices))
+
+        task = {
+            "id":           task_id,
+            "script":       str(script),
+            "workdir":      str(workdir),
+            "env":          env,
+            "priority":     args.priority,
+            "enqueue_time": (base_time + timedelta(microseconds=seq)).isoformat(),
+            "gpu_count":    gpu_count,
+        }
+        if args.exclusive:
+            task["exclusive"] = True
+        if index is not None:
+            task["array_index"] = index
+        if args.cpu:
+            task["cpu"] = True
+        if depends_on:
+            task["depends_on"] = depends_on
+        if timeout_seconds is not None:
+            task["timeout"] = timeout_seconds
+        if args.retries > 0:
+            task["max_retries"] = args.retries
+        write_task(QUEUE_DIR, task)
+        task_ids.append(task_id)
+        print(task_id, flush=True)
+    task_id = task_ids[0]
+
+    # Poke the dispatcher so the task dispatches immediately instead of on
+    # the next poll tick.
+    if not signal_dispatcher():
+        print(colour("warning: dispatcher is not running – start it with: gpu-scheduler start", YELLOW),
+              file=sys.stderr)
+
+    if args.follow:
+        sys.exit(follow_task(task_id))
+
+
+if __name__ == "__main__":
+    main()

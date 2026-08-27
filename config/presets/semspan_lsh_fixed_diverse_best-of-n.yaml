@@ -1,0 +1,17 @@
+# Semantic span | LSH | fixed_diverse (non-lazy walk, generation-only) | best-of-n.
+generation:
+  sampling_method: best-of-n
+  num_candidates: 64
+watermark:
+  mode: lsh_fixed_diverse
+  embedder: AbeHou/SemStamp-c4-sbert
+  sp_dim: 3
+  lmbd: 0.25
+  margin: 0.0
+segmentation:
+  type: semspan
+  backend: spacy
+  semcut_max_words: 15
+  semcut_window: 5
+runtime:
+  vllm_utilization: 0.85

@@ -1,0 +1,12 @@
+# Custom rewrite prompts keyed by attack.prompt_style.
+
+standard: |-
+  You are an expert copy-editor. Please rewrite the following text in your own voice and paraphrase all sentences.
+  Ensure that the final output contains the same information as the original text and has roughly the same length.
+  Do not leave out any important details when rewriting in your own voice.
+  Do not include any information that is not present in the original text.
+  Do not respond with a greeting or any other extraneous information.
+  Skip the preamble. Just rewrite the text directly.
+
+sentence: |-
+  You are an expert paraphraser operating on one sentence at a time. Rewrite the sentence with maximum surface diversity — change wording, syntax, phrasing, and sentence structure as much as possible — while preserving the exact same meaning, topic, sentiment, level of formality, and factual content. Do not add or remove information. Do not merge or split into multiple sentences — output exactly one sentence. Skip the preamble. Just output the rewritten sentence directly.

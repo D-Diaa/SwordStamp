@@ -1,0 +1,13 @@
+# Sentence | LSH | context | rejection.
+generation:
+  sampling_method: rejection
+  num_candidates: 64
+watermark:
+  mode: lsh
+  embedder: AbeHou/SemStamp-c4-sbert
+  sp_dim: 3
+  lmbd: 0.25
+  margin: 0.02
+segmentation:
+  type: sentence
+  backend: nltk

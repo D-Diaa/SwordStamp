@@ -1,0 +1,128 @@
+schema_version: 1
+artifact:
+  name: SwordStamp
+  version: 1.0.0
+  review_state: double-anonymous
+
+protocol:
+  python: "3.11"
+  provider_candidate_budget: 64
+  generated_documents: 1024
+  null_documents: 1024
+  maximum_new_tokens: 256
+  semantic_span_maximum_words: 15
+  semantic_span_comparison_window: 5
+
+datasets:
+  - role: prompts-centers-and-null
+    identifier: allenai/c4
+    configuration: realnewslike
+    revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
+    redistribution: excluded
+
+models:
+  - role: provider
+    identifier: meta-llama/Llama-3.1-8B
+    revision: d04e592bb4f6aa9cfee91e2e20afa771667e1d4b
+  - role: watermark-embedder
+    identifier: AbeHou/SemStamp-c4-sbert
+    revision: a77dce8530e100ac1101981e4be390546c1cb282
+  - role: comparison-embedder
+    identifier: sentence-transformers/all-mpnet-base-v2
+    revision: e8c3b32edf5434bc2275fc9bab85f82640a19130
+  - role: no-box-paraphraser
+    identifier: Qwen/Qwen2.5-3B-Instruct
+    revision: aa8e72537993ba99e69dfaafa59ed015b17504d1
+  - role: no-box-surrogate
+    identifier: BAAI/bge-base-en-v1.5
+    revision: a5beb1e3e68b9ab74eb54cfd186867f64f240e1a
+  - role: quality-judge
+    identifier: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+  - role: embedding-similarity
+    identifier: google/embeddinggemma-300m
+    revision: 57c266a740f537b4dc058e1b0cda161fd15afa75
+  - role: dipper-paraphraser
+    identifier: kalpeshk2011/dipper-paraphraser-xxl
+    revision: c1fbf7a958a2aab022e9e6f81f7a3139f9e6ee3c
+  - role: dipper-tokenizer
+    identifier: google/t5-v1_1-xxl
+    revision: 3db67ab1af984cf10548a73467f0e5bca2aaaeb2
+  - role: mauve-featurizer
+    identifier: gpt2-large
+    revision: 32b71b12589c2f8d625668d2335a01cac3249519
+
+comparison_sources:
+  - name: PMark
+    path: comparisons/pmark
+    original_repository: https://github.com/PMark-repo/PMark
+    upstream_revision: 75140fe7142f88c51ba50984d9eb07f44f5961b3
+    source_files: 15
+    aggregate_sha256: ee623782f772e72aa9b566e58a73b316e75a54e004eed796292f28f51f5f1f03
+    license_file: absent
+    excluded: tracked demonstration datasets and tracked Python bytecode
+    diff_from_upstream:
+      files: [calibration.py, detect.py, pmark.py, utils/detect.py, utils/sample.py]
+      insertions: 635
+      deletions: 204
+  - name: SAMark
+    path: comparisons/samark
+    original_repository: https://github.com/Z1zs/SAMark
+    upstream_revision: e098bd347ba936c3e9335db6f24632fd0c319141
+    source_files: 21
+    aggregate_sha256: e0b4cc27a82269371b8475bd6061b4964f8447656323b134cbdbd13a3866ae26
+    license_file: absent
+    excluded: tracked demonstration datasets
+    diff_from_upstream:
+      files: [README.md, attack_utils.py, hierarchical_tpr.py, run_pipeline.sh,
+              samark_detect.py, samark_gen.py, samark_gen_unwatermarked.py]
+      insertions: 462
+      deletions: 191
+    local_changes:
+      - replace one host-local OPT tokenizer path with facebook/opt-1.3b
+      - make one exporter docstring path repository-independent
+
+withheld_during_review:
+  - scheduler origin and repository revision
+  - paper-source repository history
+
+third_party_licenses:
+  - component: MarkLLM utilities bundled by SAMark
+    path: comparisons/LICENSES/MarkLLM-APACHE-2.0.txt
+    source_repository: https://github.com/THU-BPM/MarkLLM
+    license: Apache-2.0
+    sha256: c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
+
+artifacts:
+  - path: artifacts/centers/cc_sentence_nltk_k8.pt
+    sha256: 31e3acdb5471fd508e6c1b44df07d29b6e6340c13190a3843bbdae60d4e214f5
+  - path: artifacts/centers/cc_semspan_spacy_max15_win5_k8.pt
+    sha256: 0b838b81865e303ba84f5e2d79134f22137801aadad35e9d5ee3c45dbb0f925d
+
+vendored_tools:
+  - path: tools/gpu_scheduler/LICENSE
+    sha256: c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
+  - path: tools/gpu_scheduler/bin/gpu-delete
+    sha256: 85d367e4a7ca67c363e8eb8ec8f7e71dcf5d3822ac1375e9a60b435007340d1e
+  - path: tools/gpu_scheduler/bin/gpu-enqueue
+    sha256: 07dc6ce2f56d2f2af071abfe251bf46062b04998979461857d5deecd545c4a46
+  - path: tools/gpu_scheduler/bin/gpu-scheduler
+    sha256: 1135c3f2849b9faa41bc3b84298de4e03f2eafb03172fb8a3e8cb6ecd07f6ccc
+  - path: tools/gpu_scheduler/bin/gpu-status
+    sha256: 409b9e8235914791c78b998fdaf806a7eed0377979e4f6666beeb90df3170e68
+  - path: tools/gpu_scheduler/src/common.py
+    sha256: 1815b5582ea109e20e7f736c8730291b2370aae8decb24eac305fe41c2acf413
+  - path: tools/gpu_scheduler/src/dispatcher.py
+    sha256: 4a5a90aceadbb061b5c7272887b90be4aaa8786723fed8b942554fc6bd8c2401
+  - path: tools/gpu_scheduler/src/warmup.py
+    sha256: d7669bdccd10fad342808f9631e6d8c5ee247a5e3ba65cf36b65fae5e8af2e2f
+
+compiled_bundle:
+  - path: results/paper/cell_summary.csv
+    sha256: cab0a5f5674e0fb0cfa7374743f9a71800f110ba3eee03c51f1d9e9fe0a825cc
+  - path: results/paper/dataset_summary.csv
+    sha256: 8d0c7e8ba1a206f5294e3b072833fd2aca0acb6de956b1eafb9d052a278bca2e
+  - path: results/paper/per_sample.parquet
+    sha256: 9f3149256993090c50d0e30caf2cab9286f21d7ce1113f83f9d19b0c35f08b30
+  - path: results/paper/unit_encoder_transfer.parquet
+    sha256: eb674dc4c53c2f7caf10ad552e2dbb61aa5124e0983d1b262c15b603d6a1e61e

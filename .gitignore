@@ -1,0 +1,54 @@
+# Python environments and caches
+.venv/
+**/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+/build/
+/dist/
+*.egg-info/
+
+# Local tools and credentials
+.tools/
+.env
+.env.*
+!.env.example
+.codex/
+.claude/
+
+# Model and experiment data (never committed)
+/data
+/models/
+/semstamp-data/
+/results/*
+!/results/paper/
+/results/paper/*
+!/results/paper/README.md
+!/results/paper/SHA256SUMS
+!/results/paper/manifest.json
+!/results/paper/unit_encoder_transfer.manifest.json
+!/results/paper/cell_summary.csv
+!/results/paper/dataset_summary.csv
+!/results/paper/per_sample.parquet
+!/results/paper/unit_encoder_transfer.parquet
+/figures/
+/runs/
+/logs/
+/wandb/
+/cache/
+
+# Scheduler scratch files
+/scripts/jobs/
+/scripts/configs/
+/tasks/
+*.log
+*.nfs*
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+*~

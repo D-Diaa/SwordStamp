@@ -1,0 +1,16 @@
+# Minimal, tested environment for the PMark artifact-integration bridge.
+# Keep this separate from SwordStamp because PMark imports and initializes its
+# own vLLM runtime. Versions match the environment used to validate the pinned
+# bundled comparison snapshot.
+datasets==4.0.0
+matplotlib==3.10.5
+nltk==3.9.1
+numpy==1.26.4
+openai==1.100.1
+scipy==1.16.1
+seaborn==0.13.2
+sentence-transformers==5.1.0
+torch==2.6.0+cu124
+tqdm==4.67.1
+transformers==4.55.2
+vllm==0.8.5.post1

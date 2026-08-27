@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""
+gpu-delete — remove a task from the pending queue.
+
+Only queued (not-yet-started) tasks can be deleted.  Running tasks cannot be
+deleted this way; use `gpu-scheduler kill` to stop and fail queued/running
+tasks.
+
+Usage
+-----
+  gpu-delete TASK_ID [TASK_ID ...]
+
+  TASK_ID may be the full ID or a unique prefix of one.
+
+Exit codes
+----------
+  0  All specified tasks deleted successfully.
+  1  One or more task IDs were not found in the queue (or were ambiguous).
+"""
+
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+# ── Bootstrap ─────────────────────────────────────────────────────────────────
+_LIB = Path.home() / ".gpu-scheduler" / "lib"
+sys.path.insert(0, str(_LIB))
+
+from common import (
+    QUEUE_DIR, RUNNING_DIR, FAILED_DIR,
+    list_tasks, write_task, signal_dispatcher,
+    colour, GREEN, RED, YELLOW, GREY, die,
+)
+
+
+def _find_in_queue(task_id: str) -> list[Path]:
+    """Return queue files whose name starts with task_id."""
+    return [p for p in QUEUE_DIR.glob("*.json") if p.stem.startswith(task_id)]
+
+
+def _cascade_fail_dependents(deleted_id: str) -> None:
+    for task in list_tasks(QUEUE_DIR):
+        deps = task.get("depends_on") or []
+        if deleted_id not in deps:
+            continue
+        result = {k: v for k, v in task.items() if not k.startswith("_")}
+        result["end_time"] = datetime.now(tz=timezone.utc).isoformat()
+        result["returncode"] = -2
+        result["failure_note"] = f"dependency deleted: {deleted_id}"
+        write_task(FAILED_DIR, result)
+        task["_path"].unlink(missing_ok=True)
+        print(colour("✓", GREEN), f"Cascade-failed {task['id']} (dependency deleted).")
+
+
+def delete_task(task_id: str) -> str | None:
+    """
+    Attempt to delete a queued task.
+    Returns the deleted task's full ID, or None on failure (prints reason).
+    """
+    matches = _find_in_queue(task_id)
+
+    if not matches:
+        # Check if it's running
+        running = list(RUNNING_DIR.glob(f"{task_id}*.json"))
+        if running:
+            print(colour(f"  {task_id}: task is currently RUNNING – cannot delete.", YELLOW),
+                  file=sys.stderr)
+        else:
+            print(colour(f"  {task_id}: not found in queue.", RED), file=sys.stderr)
+        return None
+
+    if len(matches) > 1:
+        print(colour(f"  {task_id}: ambiguous prefix, matches:", RED), file=sys.stderr)
+        for m in matches:
+            print(f"    {m.stem}", file=sys.stderr)
+        return None
+
+    path = matches[0]
+    path.unlink(missing_ok=True)
+    print(colour("✓", GREEN), f"Deleted {path.stem}")
+    return path.stem
+
+
+def main() -> None:
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog="gpu-delete",
+        description="Delete one or more queued tasks.",
+    )
+    parser.add_argument("task_ids", nargs="+", metavar="TASK_ID",
+                        help="Task ID(s) to delete. Prefix match supported.")
+    args = parser.parse_args()
+
+    ok = True
+    deleted: list[str] = []
+    for tid in args.task_ids:
+        deleted_id = delete_task(tid)
+        if deleted_id is None:
+            ok = False
+        else:
+            deleted.append(deleted_id)
+
+    for tid in deleted:
+        _cascade_fail_dependents(tid)
+
+    if deleted:
+        # Wake the dispatcher so any pending reservation for a deleted task
+        # is released immediately.
+        signal_dispatcher()
+
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,19 @@
+{
+  "generated_by": "visualization.compile_results",
+  "schema_version": 1,
+  "rows": 154326,
+  "retained_cells": [
+    "lsh:context:rejection:sentence-nltk",
+    "pmark:online:rejection:sentence-nltk"
+  ],
+  "source_attack_budgets": [1, 2, 4, 8, 16, 32, 64],
+  "surrogate_encoder": "BAAI/bge-base-en-v1.5",
+  "provider_encoder": "AbeHou/SemStamp-c4-sbert",
+  "alignment": "positional sentence index after sentence-nltk segmentation",
+  "distance": "max(0, 1 - cosine) over normalized sentence embeddings",
+  "review_projection": {
+    "dropped_columns": ["marked_sentence", "attacked_sentence"],
+    "reason": "text is not consumed by figure extraction",
+    "numerical_values_changed": false
+  }
+}

@@ -1,0 +1,1522 @@
+#!/usr/bin/env python3
+"""
+gpu-status - detailed view of the GPU scheduler state.
+
+Shows dispatcher health, per-GPU state, pending queue, running tasks,
+and recent completions.
+
+Usage
+-----
+  gpu-status [--queue] [--done N] [--failed N] [--json]
+  gpu-status --watch [--done N] [--failed N]
+
+Options
+-------
+  --queue        Show full pending queue details.
+  --done N       Show N most recent completed tasks (default: 5; all in watch).
+  --failed N     Show N most recent failed tasks (default: 5; all in watch).
+  --json         Emit machine-readable JSON.
+  --watch        Open a persistent interactive terminal display.
+
+Exit codes
+----------
+  0  Dispatcher is running.
+  1  Dispatcher is stopped.
+"""
+
+import argparse
+import json as json_mod
+import os
+import queue as queue_mod
+import subprocess
+import sys
+import threading
+import time
+from collections import defaultdict, deque
+from datetime import datetime, timezone
+from pathlib import Path
+
+# -- Bootstrap -----------------------------------------------------------------
+_LIB = Path.home() / ".gpu-scheduler" / "lib"
+sys.path.insert(0, str(_LIB))
+
+from common import (
+    SCHEDULER_HOME, QUEUE_DIR, RUNNING_DIR, DONE_DIR, FAILED_DIR, LOGS_DIR,
+    load_config, validate_config, is_dispatcher_running, read_dispatcher_pid,
+    list_tasks, sorted_queue, task_ids_in, task_ids_in_all_state_dirs,
+    retry_failed_task, set_queued_task_priority, preempt_running_task_direct,
+    kill_task_direct,
+    is_cpu_task, is_paused, set_paused, format_duration,
+    submit_dispatcher_request, signal_dispatcher, wait_dispatcher_request_result,
+    cleanup_dispatcher_request_result,
+    TaskDirCache,
+    colour, BOLD, GREEN, RED, YELLOW, CYAN, GREY, RESET,
+)
+
+# Re-parsing every JSON in done/ + failed/ on each refresh is what made the
+# old watch mode crawl once history grew; this cache only re-reads changed files.
+_TASK_CACHE = TaskDirCache()
+
+
+LOG_TAIL_BYTES = 256 * 1024
+LOG_TAIL_LINES = 5000
+WATCH_LIST_HELP = (
+    "Up/Down/j/k: select  Left/Right: section  Enter/Space: log  "
+    "r: retry  d: defer  x: kill  p: priority  P: pause/resume  q/Esc: quit"
+)
+WATCH_LOG_HELP = "Enter/Space: back  PgUp/PgDn: scroll  End: follow  q/Esc: quit"
+GPU_HISTORY_LEN = 60
+
+
+def _age(iso: str) -> str:
+    """Human-readable age of an ISO-8601 timestamp."""
+    try:
+        dt = datetime.fromisoformat(iso)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        secs = max(0, int((datetime.now(tz=timezone.utc) - dt).total_seconds()))
+        if secs < 60:
+            return f"{secs}s ago"
+        if secs < 3600:
+            return f"{secs // 60}m ago"
+        if secs < 86400:
+            return f"{secs // 3600}h ago"
+        return f"{secs // 86400}d ago"
+    except Exception:
+        return iso
+
+
+def _short_id(task_id: str) -> str:
+    """Return last 8 chars of task ID for compact display."""
+    return task_id[-8:] if len(task_id) > 8 else task_id
+
+
+def _task_name(task: dict) -> str:
+    name = Path(task.get("script", "?")).name
+    if "array_index" in task:
+        name += f"[{task['array_index']}]"
+    return name
+
+
+def _clean(tasks: list[dict]) -> list[dict]:
+    return [{k: v for k, v in t.items() if not k.startswith("_")} for t in tasks]
+
+
+def _limited(tasks: list[dict], limit: int | None) -> list[dict]:
+    if limit is None:
+        return tasks
+    if limit <= 0:
+        return []
+    return tasks[:limit]
+
+
+def _gpu_sort_key(value) -> tuple[int, int | str]:
+    try:
+        return (0, int(value))
+    except (TypeError, ValueError):
+        return (1, str(value))
+
+
+def _task_gpu_indices(task: dict) -> list[int]:
+    raw_indices = task.get("gpu_indices")
+    if isinstance(raw_indices, list) and raw_indices:
+        try:
+            return [int(idx) for idx in raw_indices]
+        except (TypeError, ValueError):
+            return []
+    gpu_idx = task.get("gpu_index")
+    if gpu_idx is None:
+        return []
+    try:
+        return [int(gpu_idx)]
+    except (TypeError, ValueError):
+        return []
+
+
+def _task_gpu_count(task: dict) -> int:
+    if is_cpu_task(task):
+        return 0
+    try:
+        return max(1, int(task.get("gpu_count", 1)))
+    except (TypeError, ValueError):
+        return 1
+
+
+def _task_gpu_label(task: dict, *, pending: bool = False) -> str:
+    if is_cpu_task(task):
+        return "CPU"
+    indices = _task_gpu_indices(task)
+    if indices:
+        joined = ",".join(str(idx) for idx in indices)
+        return ("GPUs " if len(indices) > 1 else "GPU ") + joined
+    count = _task_gpu_count(task)
+    if pending:
+        return f"{count} GPU{'s' if count != 1 else ''}"
+    return "GPU ?"
+
+
+def _task_retry_label(task: dict) -> str:
+    """' try 2/3' for tasks that have been auto-retried, else ''."""
+    try:
+        attempt = int(task.get("attempt", 0) or 0)
+        max_retries = int(task.get("max_retries", 0) or 0)
+    except (TypeError, ValueError):
+        return ""
+    if attempt <= 0:
+        return ""
+    return f"  try {attempt}/{max_retries}" if max_retries else f"  try {attempt}"
+
+
+def _task_timeout_label(task: dict) -> str:
+    raw = task.get("timeout")
+    try:
+        timeout = float(raw)
+    except (TypeError, ValueError):
+        return ""
+    if timeout <= 0:
+        return ""
+    return f"timeout {format_duration(timeout)}"
+
+
+def _task_slot_usage(task: dict, tasks_per_gpu: int) -> int:
+    if is_cpu_task(task):
+        return 0
+    indices = _task_gpu_indices(task)
+    count = max(_task_gpu_count(task), len(indices), 1)
+    return count * tasks_per_gpu if count > 1 or task.get("exclusive") is True else 1
+
+
+def _used_slots(tasks: list[dict], tasks_per_gpu: int) -> int:
+    return sum(_task_slot_usage(task, tasks_per_gpu) for task in tasks)
+
+
+def _slots_by_gpu(tasks: list[dict], tasks_per_gpu: int) -> dict[int, int]:
+    by_gpu: dict[int, int] = defaultdict(int)
+    for task in tasks:
+        indices = _task_gpu_indices(task)
+        if not indices:
+            continue
+        usage = tasks_per_gpu if (
+            max(_task_gpu_count(task), len(indices)) > 1
+            or task.get("exclusive") is True
+        ) else 1
+        for idx in indices:
+            by_gpu[idx] += usage
+    return by_gpu
+
+
+def _running_sort_key(task: dict) -> tuple[tuple[int, int | str], str, str]:
+    return (
+        _gpu_sort_key(task.get("gpu_index")),
+        task.get("start_time", ""),
+        task.get("id", ""),
+    )
+
+
+def _load_status_snapshot(
+    *,
+    done_limit: int | None = 5,
+    failed_limit: int | None = 5,
+    include_gpu_metrics: bool = False,
+) -> dict:
+    """Collect scheduler state in a shape shared by human, JSON, and watch views."""
+    running = is_dispatcher_running()
+    pid = read_dispatcher_pid()
+    config_error = None
+
+    try:
+        cfg = validate_config(load_config())
+    except FileNotFoundError:
+        cfg = {}
+        config_error = "not initialised - run: gpu-scheduler init --gpus ..."
+    except ValueError as exc:
+        cfg = {"error": str(exc)}
+        config_error = f"invalid config: {exc}"
+
+    rtasks = sorted(_TASK_CACHE.list_tasks(RUNNING_DIR), key=_running_sort_key)
+    qtasks = sorted_queue(_TASK_CACHE.list_tasks(QUEUE_DIR))
+    dtasks = sorted(_TASK_CACHE.list_tasks(DONE_DIR), key=lambda t: t.get("end_time", ""), reverse=True)
+    ftasks = sorted(_TASK_CACHE.list_tasks(FAILED_DIR), key=lambda t: t.get("end_time", ""), reverse=True)
+
+    gpus = cfg.get("gpu_indices", [])
+    tpg = cfg.get("tasks_per_gpu", 1)
+    used_slots = _used_slots(rtasks, tpg)
+    gpu_metrics = {}
+    if include_gpu_metrics and gpus:
+        gpu_metrics = _query_gpu_metrics(gpus)
+
+    return {
+        "dispatcher": {
+            "running": running,
+            "pid": pid,
+        },
+        "config": cfg,
+        "config_error": config_error,
+        "paused": is_paused(),
+        "slots": {
+            "total": len(gpus) * tpg,
+            "used": used_slots,
+            "free": len(gpus) * tpg - used_slots,
+        },
+        "queue": qtasks,
+        "running": rtasks,
+        "done": _limited(dtasks, done_limit),
+        "failed": _limited(ftasks, failed_limit),
+        "done_ids": task_ids_in(DONE_DIR),
+        "failed_ids": task_ids_in(FAILED_DIR),
+        "known_ids": task_ids_in_all_state_dirs(),
+        "gpu_metrics": gpu_metrics,
+        "timestamp": datetime.now(tz=timezone.utc),
+    }
+
+
+def _parse_int(value: str) -> int | None:
+    value = value.strip()
+    if not value or value.lower() in {"n/a", "na", "none", "[not supported]"}:
+        return None
+    try:
+        return int(float(value))
+    except ValueError:
+        return None
+
+
+def _unknown_gpu_metric(index: int) -> dict:
+    return {
+        "index": index,
+        "gpu_util": None,
+        "mem_used": None,
+        "mem_total": None,
+        "mem_free": None,
+    }
+
+
+def _parse_nvidia_smi_gpu_metrics(output: str) -> dict[int, dict]:
+    metrics: dict[int, dict] = {}
+    for raw_line in output.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) != 5:
+            continue
+        index = _parse_int(parts[0])
+        if index is None:
+            continue
+        metrics[index] = {
+            "index": index,
+            "gpu_util": _parse_int(parts[1]),
+            "mem_used": _parse_int(parts[2]),
+            "mem_total": _parse_int(parts[3]),
+            "mem_free": _parse_int(parts[4]),
+        }
+    return metrics
+
+
+def _query_gpu_metrics(gpu_indices: list[int], timeout: float = 1.0) -> dict[int, dict]:
+    metrics = {idx: _unknown_gpu_metric(idx) for idx in gpu_indices}
+    if not gpu_indices:
+        return metrics
+
+    try:
+        out = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,utilization.gpu,memory.used,memory.total,memory.free",
+                "--format=csv,noheader,nounits",
+                "--id=" + ",".join(str(idx) for idx in gpu_indices),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=max(0.1, timeout),
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return metrics
+
+    if out.returncode != 0:
+        return metrics
+
+    parsed = _parse_nvidia_smi_gpu_metrics(out.stdout)
+    for idx in gpu_indices:
+        if idx in parsed:
+            metrics[idx] = parsed[idx]
+    return metrics
+
+
+def _fit(text: str, width: int) -> str:
+    if width <= 0:
+        return ""
+    text = str(text).replace("\t", "    ")
+    if len(text) <= width:
+        return text
+    if width == 1:
+        return "~"
+    return text[: width - 1] + "~"
+
+
+def _render_bar(ratio: float | None, width: int = 12) -> str:
+    width = max(1, width)
+    if ratio is None:
+        return "[" + ("?" * width) + "]"
+    ratio = min(1.0, max(0.0, ratio))
+    filled = int(round(ratio * width))
+    return "[" + ("#" * filled) + ("-" * (width - filled)) + "]"
+
+
+_SPARK_CHARS = "▁▂▃▄▅▆▇█"
+
+
+def _render_sparkline(values, width: int = 24) -> str:
+    """Render a utilization history (0-100 ints, None = unknown) as a sparkline."""
+    vals = list(values)[-width:]
+    out = []
+    for v in vals:
+        if v is None:
+            out.append("·")
+        else:
+            v = min(100, max(0, int(v)))
+            out.append(_SPARK_CHARS[min(len(_SPARK_CHARS) - 1, v * len(_SPARK_CHARS) // 101)])
+    return "".join(out)
+
+
+def _gpu_activity(index: int, slots_used: int) -> str:
+    """busy / warm / idle, inferred from running slots and the warmup pidfile."""
+    if slots_used > 0:
+        return "busy"
+    if (SCHEDULER_HOME / f"warmup_{index}.pid").exists():
+        return "warm"
+    return "idle"
+
+
+def _mib_to_gib(value: int | None) -> str:
+    if value is None:
+        return "--"
+    return f"{value / 1024:.1f}"
+
+
+def _queue_dep_label(task: dict, done_ids: set, failed_ids: set, known_ids: set) -> str:
+    deps = task.get("depends_on") or []
+    if not deps:
+        return ""
+    pending = [d for d in deps if d not in done_ids]
+    missing = [d for d in deps if d not in known_ids]
+    if any(d in failed_ids for d in deps):
+        return "dep FAILED"
+    if missing:
+        return "dep missing"
+    if pending:
+        return f"waiting {len(pending)}/{len(deps)} dep"
+    return "deps ready"
+
+
+def _queue_dep_is_waiting(task: dict, done_ids: set, failed_ids: set, known_ids: set) -> bool:
+    return _queue_dep_label(task, done_ids, failed_ids, known_ids).startswith("waiting")
+
+
+def _format_env_pairs(env: dict) -> str:
+    if not env:
+        return "(none)"
+    return "  ".join(f"{key}={env[key]}" for key in sorted(env))
+
+
+def _returncode_label(task: dict) -> str:
+    return str(task["returncode"]) if "returncode" in task else "-"
+
+
+def _find_task_in_snapshot(snapshot: dict, task_id: str) -> tuple[str | None, dict | None]:
+    for state_name in ("running", "queue", "done", "failed"):
+        for task in snapshot.get(state_name, []):
+            if task.get("id") == task_id:
+                return state_name, task
+    return None, None
+
+
+def _log_detail_lines(snapshot: dict, task_id: str) -> list[str]:
+    state_name, task = _find_task_in_snapshot(snapshot, task_id)
+    if not task:
+        return [f"Task metadata unavailable for {task_id}."]
+
+    gpu_indices = _task_gpu_indices(task)
+    if is_cpu_task(task):
+        gpu_value = ""
+        first_gpu = ""
+    else:
+        gpu_value = ",".join(str(idx) for idx in gpu_indices) if gpu_indices else "(assigned at start)"
+        first_gpu = str(gpu_indices[0]) if gpu_indices else "(assigned at start)"
+    scheduler_env = {
+        "CUDA_VISIBLE_DEVICES": gpu_value,
+        "GPU_SCHEDULER_GPU_COUNT": str(_task_gpu_count(task)),
+        "GPU_SCHEDULER_GPU_INDEX": first_gpu,
+        "GPU_SCHEDULER_GPU_INDICES": gpu_value,
+        "GPU_SCHEDULER_TASK_ID": task.get("id", task_id),
+    }
+    extra_env = task.get("env") or {}
+    if not isinstance(extra_env, dict):
+        extra_env = {}
+
+    lines = [
+        f"Task: {task.get('id', task_id)}  state={state_name or '?'}  script={task.get('script', '?')}",
+        f"Workdir: {task.get('workdir', str(Path.home()))}",
+        f"Scheduler env: {_format_env_pairs(scheduler_env)}",
+        f"Task env: {_format_env_pairs(extra_env)}",
+    ]
+    extras = []
+    timeout_text = _task_timeout_label(task)
+    if timeout_text:
+        extras.append(timeout_text)
+    retry_text = _task_retry_label(task).strip()
+    if retry_text:
+        extras.append(retry_text)
+    if task.get("last_failure"):
+        extras.append(f"last failure: {task['last_failure']}")
+    if extras:
+        lines.append("Limits: " + "  ".join(extras))
+    resources = _task_resources_label(task)
+    if resources:
+        lines.append(resources)
+    return lines
+
+
+def _task_resources_label(task: dict) -> str:
+    """'Resources: peak GPU mem 12.3 GiB · avg util 84% (n samples)' or ''."""
+    metrics = task.get("gpu_metrics")
+    if not isinstance(metrics, dict):
+        return ""
+    parts = []
+    peak = metrics.get("peak_mem_mib")
+    if isinstance(peak, (int, float)):
+        parts.append(f"peak GPU mem {peak / 1024:.1f} GiB")
+    util = metrics.get("avg_util")
+    if isinstance(util, (int, float)):
+        parts.append(f"avg util {util:.0f}%")
+    if not parts:
+        return ""
+    samples = metrics.get("samples")
+    suffix = f"  ({samples} sample{'s' if samples != 1 else ''})" if samples else ""
+    return "Resources: " + " · ".join(parts) + suffix
+
+
+def _read_log_tail(
+    task_id: str,
+    *,
+    max_bytes: int = LOG_TAIL_BYTES,
+    max_lines: int = LOG_TAIL_LINES,
+) -> tuple[bool, list[str], Path]:
+    """Read a bounded tail of a task log, decoding invalid bytes safely."""
+    log_path = LOGS_DIR / f"{task_id}.log"
+    if not log_path.exists():
+        return False, [f"No log yet for task {task_id}.", f"Expected: {log_path}"], log_path
+
+    try:
+        with open(log_path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            start = max(0, size - max_bytes)
+            fh.seek(start)
+            data = fh.read()
+    except OSError as exc:
+        return False, [f"Could not read log: {exc}"], log_path
+
+    if start > 0:
+        first_newline = data.find(b"\n")
+        if first_newline != -1:
+            data = data[first_newline + 1 :]
+
+    text = data.decode("utf-8", errors="replace")
+    lines = text.splitlines()
+    if not lines:
+        lines = ["(log is empty)"]
+    return True, lines[-max_lines:], log_path
+
+
+def _watch_history_limit(value: int | None) -> int | None:
+    return None if value is None else value
+
+
+def _watch_refresh_interval(snapshot: dict) -> float:
+    cfg = snapshot.get("config") or {}
+    try:
+        return max(0.5, float(cfg.get("poll_interval", 1.0)))
+    except (TypeError, ValueError):
+        return 1.0
+
+
+def print_status(args) -> bool:
+    """Print human-readable status. Returns True if dispatcher is running."""
+    done_limit = 5 if args.done is None else args.done
+    failed_limit = 5 if args.failed is None else args.failed
+    snapshot = _load_status_snapshot(done_limit=done_limit, failed_limit=failed_limit)
+    running = snapshot["dispatcher"]["running"]
+    pid = snapshot["dispatcher"]["pid"]
+
+    # -- Header ----------------------------------------------------------------
+    if running:
+        print(colour("● Dispatcher running", GREEN, BOLD) + f"  (PID {pid})")
+    else:
+        print(colour("○ Dispatcher stopped", RED, BOLD))
+    if snapshot.get("paused"):
+        print(colour("‖ Dispatching PAUSED", YELLOW, BOLD) + "  (resume with: gpu-scheduler resume)")
+
+    cfg = snapshot["config"]
+    if snapshot["config_error"]:
+        if cfg:
+            print(colour(f"  {snapshot['config_error']}", RED))
+        else:
+            print(colour("  (not initialised - run: gpu-scheduler init --gpus ...)", YELLOW))
+        return running
+
+    gpus = cfg["gpu_indices"]
+    tpg = cfg.get("tasks_per_gpu", 1)
+    print(f"  GPUs owned     : {gpus}")
+    print(f"  Tasks per GPU  : {tpg}")
+    print(f"  Warmup         : {cfg['warmup_gb']} GB per idle GPU")
+    print(f"  Ready check    : {cfg.get('gpu_ready_free_frac', 0):.2f} free, {cfg.get('gpu_ready_timeout', 0)}s")
+
+    # -- Running tasks ---------------------------------------------------------
+    rtasks = snapshot["running"]
+    print()
+    if rtasks:
+        total_slots = snapshot["slots"]["total"]
+        used_slots = snapshot["slots"]["used"]
+        print(colour(f"  ▶ Running ({used_slots}/{total_slots} slots)", GREEN, BOLD))
+        for task in rtasks:
+            age = _age(task.get("start_time", ""))
+            name = _task_name(task)
+            tid = task["id"]
+            gpu_label = _task_gpu_label(task)
+            slot_count = _task_slot_usage(task, tpg)
+            print(f"    {colour(tid, CYAN)}  {gpu_label}  slots={slot_count}  {name}  ({age})")
+    else:
+        print(colour("  ▶ No running tasks", GREY))
+
+    # -- Pending queue ---------------------------------------------------------
+    qtasks = snapshot["queue"]
+    print()
+    if qtasks:
+        done_ids = snapshot["done_ids"]
+        failed_ids = snapshot["failed_ids"]
+        known_ids = snapshot["known_ids"]
+        print(colour(f"  ⏳ Queue ({len(qtasks)} task{'s' if len(qtasks) != 1 else ''})", YELLOW, BOLD))
+        limit = None if args.queue else 10
+        for i, task in enumerate(qtasks):
+            if limit and i >= limit:
+                print(f"    ... and {len(qtasks) - limit} more (use --queue to show all)")
+                break
+            age = _age(task.get("enqueue_time", ""))
+            name = _task_name(task)
+            prio = task.get("priority", 0)
+            pstr = f" [p={prio}]" if prio != 0 else ""
+            retry = _task_retry_label(task).strip()
+            if retry:
+                pstr += colour(f" [{retry}]", YELLOW)
+            gstr = ""
+            if _task_gpu_count(task) != 1:
+                gstr = f" [{_task_gpu_label(task, pending=True)}]"
+            dep_label = _queue_dep_label(task, done_ids, failed_ids, known_ids)
+            dstr = ""
+            if dep_label:
+                if "FAILED" in dep_label or "missing" in dep_label:
+                    dstr = colour(f" [{dep_label}]", RED)
+                elif "waiting" in dep_label:
+                    dstr = colour(f" [{dep_label}]", YELLOW)
+                else:
+                    dstr = colour(f" [{dep_label}]", GREEN)
+            print(f"    {i + 1:>3}. {colour(task['id'], CYAN)}{pstr}{gstr}{dstr}  {name}  ({age})")
+    else:
+        print(colour("  ⏳ Queue empty", GREY))
+
+    # -- Recent done -----------------------------------------------------------
+    n_done = done_limit
+    if n_done > 0:
+        print()
+        if snapshot["done"]:
+            print(colour(f"  ✓ Recent done (last {n_done})", GREEN))
+            for task in snapshot["done"]:
+                age = _age(task.get("end_time", ""))
+                name = _task_name(task)
+                print(f"    {colour(task['id'], GREY)}  {name}  ({age})")
+
+    # -- Recent failures -------------------------------------------------------
+    n_fail = failed_limit
+    if n_fail > 0 and snapshot["failed"]:
+        print()
+        print(colour(f"  ✗ Recent failures (last {n_fail})", RED))
+        for task in snapshot["failed"]:
+            age = _age(task.get("end_time", ""))
+            name = _task_name(task)
+            rc = _returncode_label(task)
+            note = task.get("failure_note", "")
+            line = f"    {colour(task['id'], RED)}  rc={rc}  {name}  ({age})"
+            if note:
+                line += f"  [{note}]"
+            print(line)
+
+    print()
+    return running
+
+
+def print_json_status() -> bool:
+    """Print machine-readable JSON status."""
+    running = is_dispatcher_running()
+    pid = read_dispatcher_pid()
+
+    try:
+        cfg = validate_config(load_config())
+    except FileNotFoundError:
+        cfg = {}
+    except ValueError as exc:
+        cfg = {"error": str(exc)}
+
+    rtasks = _clean(list_tasks(RUNNING_DIR))
+    gpus = cfg.get("gpu_indices", [])
+    tpg = cfg.get("tasks_per_gpu", 1)
+    used_slots = _used_slots(rtasks, tpg)
+    out = {
+        "dispatcher": {
+            "running": running,
+            "pid": pid,
+        },
+        "config": cfg,
+        "paused": is_paused(),
+        "slots": {
+            "total": len(gpus) * tpg,
+            "used": used_slots,
+            "free": len(gpus) * tpg - used_slots,
+        },
+        "queue": _clean(sorted_queue(list_tasks(QUEUE_DIR))),
+        "running": rtasks,
+        "done": _clean(list_tasks(DONE_DIR)),
+        "failed": _clean(list_tasks(FAILED_DIR)),
+    }
+    print(json_mod.dumps(out, indent=2))
+    return running
+
+
+def _watch_task_rows(snapshot: dict) -> list[dict]:
+    rows: list[dict] = []
+
+    def add_header(label: str, count: int) -> None:
+        rows.append({"kind": "header", "label": f"{label} ({count})"})
+
+    def add_task(state: str, task: dict, text: str) -> None:
+        rows.append({
+            "kind": "task",
+            "state": state,
+            "task": task,
+            "id": task.get("id", ""),
+            "text": text,
+        })
+
+    running = snapshot["running"]
+    add_header("Running", len(running))
+    for task in running:
+        extras = _task_retry_label(task)
+        timeout_text = _task_timeout_label(task)
+        if timeout_text:
+            extras += f"  {timeout_text}"
+        add_task(
+            "running",
+            task,
+            f"RUN  {task.get('id', '?')}  {_task_gpu_label(task)}  "
+            f"pid={task.get('pid', '?')}{extras}  {_task_name(task)}  {_age(task.get('start_time', ''))}",
+        )
+
+    queue = snapshot["queue"]
+    done_ids = snapshot["done_ids"]
+    failed_ids = snapshot["failed_ids"]
+    known_ids = snapshot["known_ids"]
+    add_header("Queue", len(queue))
+    for task in queue:
+        prio = task.get("priority", 0)
+        dep = _queue_dep_label(task, done_ids, failed_ids, known_ids)
+        dep_text = f"  [{dep}]" if dep else ""
+        prio_text = f"p={prio}" if prio != 0 else "p=0"
+        gpu_text = _task_gpu_label(task, pending=True)
+        add_task(
+            "queue",
+            task,
+            f"QUE  {task.get('id', '?')}  {prio_text}{_task_retry_label(task)}  {gpu_text}  "
+            f"{_task_name(task)}  {_age(task.get('enqueue_time', ''))}{dep_text}",
+        )
+
+    done = snapshot["done"]
+    add_header("Done", len(done))
+    for task in done:
+        add_task(
+            "done",
+            task,
+            f"DONE {task.get('id', '?')}  {_task_name(task)}  {_age(task.get('end_time', ''))}",
+        )
+
+    failed = snapshot["failed"]
+    add_header("Failed", len(failed))
+    for task in failed:
+        note = task.get("failure_note", "")
+        note_text = f"  {note}" if note else ""
+        add_task(
+            "failed",
+            task,
+            f"FAIL {task.get('id', '?')}  rc={_returncode_label(task)}  "
+            f"{_task_name(task)}  {_age(task.get('end_time', ''))}{note_text}",
+        )
+
+    return rows
+
+
+def _selectable_rows(rows: list[dict]) -> list[dict]:
+    return [row for row in rows if row.get("kind") == "task"]
+
+
+def _selected_display_index(rows: list[dict], selected_task_id: str | None) -> int | None:
+    for idx, row in enumerate(rows):
+        if row.get("kind") == "task" and row.get("id") == selected_task_id:
+            return idx
+    return None
+
+
+def _sync_watch_selection(state, rows: list[dict]) -> None:
+    selectable = _selectable_rows(rows)
+    if not selectable:
+        state.selected_index = 0
+        state.selected_task_id = None
+        return
+
+    if state.selected_task_id:
+        for idx, row in enumerate(selectable):
+            if row.get("id") == state.selected_task_id:
+                state.selected_index = idx
+                return
+
+    state.selected_index = min(state.selected_index, len(selectable) - 1)
+    state.selected_task_id = selectable[state.selected_index].get("id")
+
+
+class _WatchState:
+    def __init__(self) -> None:
+        self.mode = "list"
+        self.selected_index = 0
+        self.selected_task_id: str | None = None
+        self.log_task_id: str | None = None
+        self.list_scroll = 0
+        self.log_scroll = 0
+        self.log_follow = True
+        self.log_visible_height = 1
+        self.snapshot: dict | None = None
+        self.last_running = False
+        self.message = ""
+        self.message_attr = "muted"
+        self.message_until = 0.0
+
+
+def _set_watch_message(state: _WatchState, message: str, attr: str = "muted", ttl: float = 4.0) -> None:
+    state.message = message
+    state.message_attr = attr
+    state.message_until = time.monotonic() + ttl
+
+
+def _curses_attrs(curses):
+    attrs = {"normal": 0}
+    if curses.has_colors():
+        try:
+            curses.start_color()
+            curses.use_default_colors()
+            curses.init_pair(1, curses.COLOR_GREEN, -1)
+            curses.init_pair(2, curses.COLOR_YELLOW, -1)
+            curses.init_pair(3, curses.COLOR_RED, -1)
+            curses.init_pair(4, curses.COLOR_CYAN, -1)
+            curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_CYAN)
+            curses.init_pair(6, curses.COLOR_WHITE, -1)
+            attrs.update({
+                "green": curses.color_pair(1),
+                "yellow": curses.color_pair(2),
+                "red": curses.color_pair(3),
+                "cyan": curses.color_pair(4),
+                "selected": curses.color_pair(5) | curses.A_BOLD,
+                "muted": curses.color_pair(6),
+            })
+            attrs["bold"] = curses.A_BOLD
+            return attrs
+        except curses.error:
+            pass
+    attrs.update({
+        "green": curses.A_BOLD,
+        "yellow": curses.A_BOLD,
+        "red": curses.A_BOLD,
+        "cyan": curses.A_BOLD,
+        "selected": curses.A_REVERSE,
+        "muted": 0,
+    })
+    attrs["bold"] = curses.A_BOLD
+    return attrs
+
+
+def _add_text(screen, y: int, x: int, text: str, width: int, attr: int = 0) -> None:
+    if width <= 0:
+        return
+    try:
+        screen.addnstr(y, x, _fit(text, width), width, attr)
+    except Exception:
+        pass
+
+
+def _draw_gpu_line(
+    screen, y: int, width: int, gpu_idx: int, slots_used: int, slots_total: int,
+    metric: dict, history=None, attrs: dict | None = None,
+) -> None:
+    util = metric.get("gpu_util")
+    mem_used = metric.get("mem_used")
+    mem_total = metric.get("mem_total")
+    mem_free = metric.get("mem_free")
+    util_ratio = None if util is None else util / 100
+    mem_ratio = None
+    if mem_used is not None and mem_total:
+        mem_ratio = mem_used / mem_total
+
+    activity = _gpu_activity(gpu_idx, slots_used)
+    util_text = "--%" if util is None else f"{util:3d}%"
+    mem_text = f"{_mib_to_gib(mem_used)}/{_mib_to_gib(mem_total)} GB"
+    free_text = f"{_mib_to_gib(mem_free)} GB free"
+    spark = f" {_render_sparkline(history, 24)}" if history else ""
+    line = (
+        f"GPU {gpu_idx:<3} {activity:<4} slots {slots_used}/{slots_total}  "
+        f"util {_render_bar(util_ratio, 10)} {util_text}{spark}  "
+        f"mem {_render_bar(mem_ratio, 14)} {mem_text}  {free_text}"
+    )
+    attr = 0
+    if attrs:
+        attr = {"busy": attrs["green"], "warm": attrs["yellow"]}.get(activity, attrs["muted"])
+    _add_text(screen, y, 0, line, width, attr)
+
+
+def _draw_watch_header(screen, snapshot: dict, attrs: dict, width: int) -> int:
+    dispatcher = snapshot["dispatcher"]
+    cfg = snapshot["config"]
+    if dispatcher["running"]:
+        status = f"Dispatcher running (PID {dispatcher['pid']})"
+        status_attr = attrs["green"] | attrs["bold"]
+    else:
+        status = "Dispatcher stopped"
+        status_attr = attrs["red"] | attrs["bold"]
+    stamp = snapshot["timestamp"].astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    _add_text(screen, 0, 0, f"gpu-status --watch  {status}", width, status_attr)
+    if snapshot.get("paused"):
+        paused_x = len(f"gpu-status --watch  {status}") + 2
+        _add_text(screen, 0, paused_x, "‖ PAUSED", width - paused_x, attrs["yellow"] | attrs["bold"])
+    _add_text(screen, 0, max(0, width - len(stamp) - 1), stamp, len(stamp) + 1, attrs["muted"])
+
+    if snapshot["config_error"]:
+        _add_text(screen, 1, 0, snapshot["config_error"], width, attrs["yellow"])
+        return 3
+
+    gpus = cfg.get("gpu_indices", [])
+    tpg = cfg.get("tasks_per_gpu", 1)
+    slots = snapshot["slots"]
+    summary = (
+        f"GPUs {gpus}  slots {slots['used']}/{slots['total']}  "
+        f"tasks_per_gpu {tpg}  refresh {_watch_refresh_interval(snapshot):.1f}s"
+    )
+    _add_text(screen, 1, 0, summary, width, attrs["muted"])
+
+    by_gpu = _slots_by_gpu(snapshot["running"], tpg)
+
+    y = 2
+    metrics = snapshot.get("gpu_metrics") or {}
+    history = snapshot.get("gpu_history") or {}
+    for gpu_idx in gpus:
+        _draw_gpu_line(
+            screen, y, width, gpu_idx, by_gpu.get(gpu_idx, 0), tpg,
+            metrics.get(gpu_idx, _unknown_gpu_metric(gpu_idx)),
+            history.get(gpu_idx), attrs,
+        )
+        y += 1
+    return y + 1
+
+
+def _draw_help(screen, height: int, width: int, mode: str, attrs: dict) -> None:
+    help_text = WATCH_LOG_HELP if mode == "log" else WATCH_LIST_HELP
+    _add_text(screen, height - 1, 0, help_text, width, attrs["muted"])
+
+
+def _draw_watch_message(screen, height: int, width: int, state: _WatchState, attrs: dict) -> None:
+    if height < 2:
+        return
+    if state.message and time.monotonic() < state.message_until:
+        attr = attrs.get(state.message_attr, attrs["muted"])
+        _add_text(screen, height - 2, 0, state.message, width, attr)
+
+
+def _draw_list_view(screen, snapshot: dict, state: _WatchState, attrs: dict, start_y: int, height: int, width: int) -> None:
+    rows = _watch_task_rows(snapshot)
+    _sync_watch_selection(state, rows)
+    display_idx = _selected_display_index(rows, state.selected_task_id)
+    visible_height = max(1, height - start_y - 2)
+
+    if display_idx is not None:
+        if display_idx < state.list_scroll:
+            state.list_scroll = display_idx
+        elif display_idx >= state.list_scroll + visible_height:
+            state.list_scroll = display_idx - visible_height + 1
+    state.list_scroll = max(0, min(state.list_scroll, max(0, len(rows) - visible_height)))
+
+    y = start_y
+    for idx, row in enumerate(rows[state.list_scroll : state.list_scroll + visible_height], start=state.list_scroll):
+        if row["kind"] == "header":
+            _add_text(screen, y, 0, row["label"], width, attrs["bold"])
+        else:
+            attr = 0
+            state_name = row.get("state")
+            if state_name == "running":
+                attr = attrs["green"]
+            elif state_name == "queue":
+                task = row.get("task") or {}
+                if _queue_dep_is_waiting(task, snapshot["done_ids"], snapshot["failed_ids"], snapshot["known_ids"]):
+                    attr = attrs["yellow"]
+            elif state_name == "failed":
+                attr = attrs["red"]
+            elif state_name == "done":
+                attr = attrs["cyan"]
+            if row.get("id") == state.selected_task_id:
+                attr = attrs["selected"]
+            _add_text(screen, y, 0, row["text"], width, attr)
+        y += 1
+
+    if not _selectable_rows(rows):
+        _add_text(screen, start_y, 0, "No tasks in running, queue, failed, or done.", width, attrs["muted"])
+
+
+def _draw_log_view(screen, snapshot: dict, state: _WatchState, attrs: dict, start_y: int, height: int, width: int, log_cache=None) -> None:
+    task_id = state.log_task_id or state.selected_task_id
+    if not task_id:
+        _add_text(screen, start_y, 0, "No task selected.", width, attrs["muted"])
+        return
+
+    if log_cache is not None:
+        exists, lines, log_path = log_cache.read(task_id)
+    else:
+        exists, lines, log_path = _read_log_tail(task_id)
+    detail_lines = _log_detail_lines(snapshot, task_id)
+    max_detail_lines = max(0, height - start_y - 5)
+    if len(detail_lines) > max_detail_lines:
+        detail_lines = detail_lines[:max_detail_lines]
+
+    log_start_y = start_y + 2 + len(detail_lines)
+    visible_height = max(1, height - log_start_y - 2)
+    state.log_visible_height = visible_height
+    max_top = max(0, len(lines) - visible_height)
+    if state.log_follow:
+        state.log_scroll = max_top
+    else:
+        state.log_scroll = max(0, min(state.log_scroll, max_top))
+
+    status = "following" if state.log_follow else "paused"
+    title_attr = attrs["green"] if exists else attrs["yellow"]
+    _add_text(screen, start_y, 0, f"Log: {task_id}  ({status})", width, title_attr | attrs["bold"])
+    _add_text(screen, start_y + 1, 0, str(log_path), width, attrs["muted"])
+
+    y = start_y + 2
+    for detail in detail_lines:
+        _add_text(screen, y, 0, detail, width, attrs["muted"])
+        y += 1
+
+    for line in lines[state.log_scroll : state.log_scroll + visible_height]:
+        _add_text(screen, y, 0, line, width)
+        y += 1
+
+
+def _move_selection(state: _WatchState, rows: list[dict], delta: int) -> None:
+    selectable = _selectable_rows(rows)
+    if not selectable:
+        state.selected_index = 0
+        state.selected_task_id = None
+        return
+    state.selected_index = min(max(0, state.selected_index + delta), len(selectable) - 1)
+    state.selected_task_id = selectable[state.selected_index].get("id")
+
+
+def _jump_selection(state: _WatchState, rows: list[dict], index: int) -> None:
+    selectable = _selectable_rows(rows)
+    if not selectable:
+        state.selected_index = 0
+        state.selected_task_id = None
+        return
+    state.selected_index = min(max(0, index), len(selectable) - 1)
+    state.selected_task_id = selectable[state.selected_index].get("id")
+
+
+def _jump_section(state: _WatchState, rows: list[dict], direction: int) -> None:
+    selectable = _selectable_rows(rows)
+    if not selectable:
+        state.selected_index = 0
+        state.selected_task_id = None
+        return
+
+    _sync_watch_selection(state, rows)
+    current_index = min(max(0, state.selected_index), len(selectable) - 1)
+    current_state = selectable[current_index].get("state")
+    scan = (
+        range(current_index + 1, len(selectable))
+        if direction > 0
+        else range(current_index - 1, -1, -1)
+    )
+
+    target_state = None
+    for idx in scan:
+        candidate_state = selectable[idx].get("state")
+        if candidate_state != current_state:
+            target_state = candidate_state
+            break
+    if target_state is None:
+        return
+
+    for idx, row in enumerate(selectable):
+        if row.get("state") == target_state:
+            state.selected_index = idx
+            state.selected_task_id = row.get("id")
+            return
+
+
+def _selected_watch_row(snapshot: dict, state: _WatchState) -> dict | None:
+    if snapshot is None:
+        return None
+    rows = _watch_task_rows(snapshot)
+    _sync_watch_selection(state, rows)
+    for row in _selectable_rows(rows):
+        if row.get("id") == state.selected_task_id:
+            return row
+    return None
+
+
+def _dispatcher_action(action: str, timeout: float = 10.0, **payload) -> dict | None:
+    request_id = submit_dispatcher_request(action, **payload)
+    signal_dispatcher()
+    result = wait_dispatcher_request_result(request_id, timeout=timeout)
+    if result is not None:
+        cleanup_dispatcher_request_result(request_id)
+    return result
+
+
+def _watch_retry_selected(state: _WatchState) -> bool:
+    row = _selected_watch_row(state.snapshot, state)
+    if not row or row.get("state") != "failed":
+        _set_watch_message(state, "Select a failed task to retry.", "yellow")
+        return False
+
+    task_id = row.get("id", "")
+    try:
+        retry_failed_task(task_id)
+        signal_dispatcher()
+    except Exception as exc:
+        _set_watch_message(state, f"Retry failed: {exc}", "red")
+        return False
+
+    _set_watch_message(state, f"Retried {task_id}; moved back to queue.", "green")
+    return True
+
+
+def _watch_defer_selected(state: _WatchState) -> bool:
+    row = _selected_watch_row(state.snapshot, state)
+    if not row or row.get("state") != "running":
+        _set_watch_message(state, "Select a running task to defer.", "yellow")
+        return False
+
+    task_id = row.get("id", "")
+    try:
+        if is_dispatcher_running():
+            result = _dispatcher_action("preempt", timeout=15.0, task_ref=task_id)
+            if result is None:
+                _set_watch_message(state, f"Defer requested for {task_id}; waiting for dispatcher.", "yellow")
+                return True
+            if not result.get("ok"):
+                raise RuntimeError(result.get("message", "defer request failed"))
+        else:
+            preempt_running_task_direct(task_id, fresh_enqueue_time=True)
+    except Exception as exc:
+        _set_watch_message(state, f"Defer failed: {exc}", "red")
+        return False
+
+    _set_watch_message(state, f"Deferred {task_id}; moved back to queue.", "green")
+    return True
+
+
+def _watch_kill_selected(state: _WatchState) -> bool:
+    row = _selected_watch_row(state.snapshot, state)
+    if not row or row.get("state") not in {"running", "queue"}:
+        _set_watch_message(state, "Select a running or queued task to kill.", "yellow")
+        return False
+
+    task_id = row.get("id", "")
+    try:
+        if is_dispatcher_running():
+            result = _dispatcher_action("kill_task", timeout=15.0, task_ref=task_id)
+            if result is None:
+                _set_watch_message(state, f"Kill requested for {task_id}; waiting for dispatcher.", "yellow")
+                return True
+            if not result.get("ok"):
+                raise RuntimeError(result.get("message", "kill request failed"))
+        else:
+            kill_task_direct(task_id)
+    except Exception as exc:
+        _set_watch_message(state, f"Kill failed: {exc}", "red")
+        return False
+
+    _set_watch_message(state, f"Killed {task_id}; moved to failed.", "green")
+    return True
+
+
+def _prompt_priority(screen, height: int, width: int, attrs: dict, task_id: str) -> str | None:
+    import curses
+
+    prompt = f"New priority for {task_id}: "
+    y = max(0, height - 2)
+    try:
+        screen.timeout(-1)
+        screen.move(y, 0)
+        screen.clrtoeol()
+        _add_text(screen, y, 0, prompt, width, attrs["bold"])
+        screen.refresh()
+        curses.echo()
+        try:
+            curses.curs_set(1)
+        except curses.error:
+            pass
+        raw = screen.getstr(y, min(len(prompt), max(0, width - 1)), 20)
+    except (KeyboardInterrupt, curses.error):
+        return None
+    finally:
+        screen.timeout(50)
+        curses.noecho()
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+
+    return raw.decode("utf-8", errors="replace").strip()
+
+
+def _watch_change_priority_selected(state: _WatchState, priority: int) -> bool:
+    row = _selected_watch_row(state.snapshot, state)
+    if not row or row.get("state") != "queue":
+        _set_watch_message(state, "Select a queued task to change priority.", "yellow")
+        return False
+
+    task_id = row.get("id", "")
+    try:
+        if is_dispatcher_running():
+            result = _dispatcher_action(
+                "set_priority",
+                timeout=10.0,
+                task_ref=task_id,
+                priority=priority,
+            )
+            if result is None:
+                _set_watch_message(state, f"Priority change requested for {task_id}.", "yellow")
+                return True
+            if not result.get("ok"):
+                raise RuntimeError(result.get("message", "priority request failed"))
+        else:
+            set_queued_task_priority(task_id, priority)
+    except Exception as exc:
+        _set_watch_message(state, f"Priority change failed: {exc}", "red")
+        return False
+
+    _set_watch_message(state, f"Priority for {task_id} set to {priority}.", "green")
+    return True
+
+
+class _SnapshotWorker(threading.Thread):
+    """Builds status snapshots (disk + nvidia-smi) off the UI thread.
+
+    The curses loop only ever renders the latest completed snapshot, so
+    cursor movement stays instant no matter how slow nvidia-smi or the
+    state directories are.
+    """
+
+    def __init__(self, done_limit: int | None, failed_limit: int | None):
+        super().__init__(daemon=True, name="gpu-status-snapshot")
+        self._done_limit = done_limit
+        self._failed_limit = failed_limit
+        self._lock = threading.Lock()
+        self._snapshot: dict | None = None
+        self._wake = threading.Event()
+        self._stopped = threading.Event()
+        self._history: dict[int, deque] = {}
+
+    def run(self) -> None:
+        while not self._stopped.is_set():
+            interval = 1.0
+            try:
+                snap = _load_status_snapshot(
+                    done_limit=self._done_limit,
+                    failed_limit=self._failed_limit,
+                    include_gpu_metrics=True,
+                )
+                for idx, metric in (snap.get("gpu_metrics") or {}).items():
+                    dq = self._history.setdefault(idx, deque(maxlen=GPU_HISTORY_LEN))
+                    dq.append(metric.get("gpu_util"))
+                snap["gpu_history"] = {idx: list(dq) for idx, dq in self._history.items()}
+                with self._lock:
+                    self._snapshot = snap
+                interval = _watch_refresh_interval(snap)
+            except Exception:
+                pass
+            self._wake.wait(timeout=interval)
+            self._wake.clear()
+
+    def latest(self) -> dict | None:
+        with self._lock:
+            return self._snapshot
+
+    def force_refresh(self) -> None:
+        self._wake.set()
+
+    def stop(self) -> None:
+        self._stopped.set()
+        self._wake.set()
+
+
+class _ActionWorker(threading.Thread):
+    """Runs task actions (retry/defer/kill/priority) off the UI thread.
+
+    Defer/kill wait up to 15 s for the dispatcher's reply; doing that on the
+    UI thread is what used to freeze the whole display.
+    """
+
+    def __init__(self, snapshot_worker: _SnapshotWorker):
+        super().__init__(daemon=True, name="gpu-status-actions")
+        self._queue: queue_mod.Queue = queue_mod.Queue()
+        self._snapshot_worker = snapshot_worker
+
+    def run(self) -> None:
+        while True:
+            fn = self._queue.get()
+            if fn is None:
+                return
+            try:
+                fn()
+            except Exception:
+                pass
+            self._snapshot_worker.force_refresh()
+
+    def submit(self, fn) -> None:
+        self._queue.put(fn)
+
+    def stop(self) -> None:
+        self._queue.put(None)
+
+
+class _LogTailCache:
+    """Re-read the displayed log tail only when the file actually changes."""
+
+    def __init__(self):
+        self._task_id: str | None = None
+        self._sig = None
+        self._result = None
+
+    def read(self, task_id: str):
+        log_path = LOGS_DIR / f"{task_id}.log"
+        try:
+            st = log_path.stat()
+            sig = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            sig = None
+        if task_id == self._task_id and sig == self._sig and self._result is not None:
+            return self._result
+        self._task_id = task_id
+        self._sig = sig
+        self._result = _read_log_tail(task_id)
+        return self._result
+
+
+def _watch_toggle_pause(state: _WatchState) -> None:
+    try:
+        if is_paused():
+            set_paused(False)
+            signal_dispatcher()
+            _set_watch_message(state, "Dispatching resumed.", "green")
+        else:
+            set_paused(True)
+            signal_dispatcher()
+            _set_watch_message(state, "Dispatching paused — queue will not drain.", "yellow")
+    except Exception as exc:
+        _set_watch_message(state, f"Pause toggle failed: {exc}", "red")
+
+
+def _watch_loop(screen, args) -> bool:
+    import curses
+
+    try:
+        curses.curs_set(0)
+    except curses.error:
+        pass
+    screen.nodelay(False)
+    screen.timeout(50)
+    attrs = _curses_attrs(curses)
+    state = _WatchState()
+
+    done_limit = _watch_history_limit(args.done)
+    failed_limit = _watch_history_limit(args.failed)
+
+    snapshot_worker = _SnapshotWorker(done_limit, failed_limit)
+    snapshot_worker.start()
+    action_worker = _ActionWorker(snapshot_worker)
+    action_worker.start()
+    log_cache = _LogTailCache()
+
+    def run_action(fn, *fn_args) -> None:
+        _set_watch_message(state, "Working…", "muted", ttl=20.0)
+        action_worker.submit(lambda: fn(*fn_args))
+
+    try:
+        while True:
+            start_y = 0
+            snap = snapshot_worker.latest()
+            if snap is not None:
+                state.snapshot = snap
+                state.last_running = snap["dispatcher"]["running"]
+
+            height, width = screen.getmaxyx()
+            screen.erase()
+            if state.snapshot is None:
+                _add_text(screen, 0, 0, "Loading scheduler state…", width, attrs["muted"])
+                _draw_help(screen, height, width, state.mode, attrs)
+                screen.refresh()
+            elif height < 8 or width < 50:
+                _add_text(screen, 0, 0, "Terminal too small for gpu-status --watch.", width, attrs["yellow"])
+                _draw_help(screen, height, width, state.mode, attrs)
+                screen.refresh()
+            else:
+                start_y = _draw_watch_header(screen, state.snapshot, attrs, width)
+                if state.mode == "log":
+                    _draw_log_view(screen, state.snapshot, state, attrs, start_y, height, width,
+                                   log_cache=log_cache)
+                else:
+                    _draw_list_view(screen, state.snapshot, state, attrs, start_y, height, width)
+                _draw_watch_message(screen, height, width, state, attrs)
+                _draw_help(screen, height, width, state.mode, attrs)
+                screen.refresh()
+
+            try:
+                key = screen.getch()
+            except KeyboardInterrupt:
+                break
+            if key == -1:
+                continue
+            if key in (ord("q"), 27, 3):
+                break
+            if state.snapshot is None:
+                continue
+
+            if key == ord("P"):
+                _watch_toggle_pause(state)
+                snapshot_worker.force_refresh()
+                continue
+
+            if state.mode == "log":
+                visible_height = max(1, state.log_visible_height)
+                if key in (ord("\n"), ord("\r"), ord(" ")):
+                    state.mode = "list"
+                    state.log_follow = True
+                elif key == curses.KEY_PPAGE:
+                    state.log_follow = False
+                    state.log_scroll = max(0, state.log_scroll - visible_height)
+                elif key == curses.KEY_NPAGE:
+                    state.log_scroll += visible_height
+                    state.log_follow = False
+                elif key == curses.KEY_HOME:
+                    state.log_follow = False
+                    state.log_scroll = 0
+                elif key == curses.KEY_END:
+                    state.log_follow = True
+                continue
+
+            rows = _watch_task_rows(state.snapshot)
+            _sync_watch_selection(state, rows)
+            page = max(1, height - start_y - 2)
+            if key in (curses.KEY_DOWN, ord("j")):
+                _move_selection(state, rows, 1)
+            elif key in (curses.KEY_UP, ord("k")):
+                _move_selection(state, rows, -1)
+            elif key == curses.KEY_RIGHT:
+                _jump_section(state, rows, 1)
+            elif key == curses.KEY_LEFT:
+                _jump_section(state, rows, -1)
+            elif key == curses.KEY_NPAGE:
+                _move_selection(state, rows, page)
+            elif key == curses.KEY_PPAGE:
+                _move_selection(state, rows, -page)
+            elif key == curses.KEY_HOME:
+                _jump_selection(state, rows, 0)
+            elif key == curses.KEY_END:
+                _jump_selection(state, rows, len(_selectable_rows(rows)) - 1)
+            elif key in (ord("\n"), ord("\r"), ord(" ")):
+                if state.selected_task_id:
+                    state.log_task_id = state.selected_task_id
+                    state.mode = "log"
+                    state.log_follow = True
+                    state.log_scroll = 0
+            elif key == ord("r"):
+                run_action(_watch_retry_selected, state)
+            elif key == ord("d"):
+                run_action(_watch_defer_selected, state)
+            elif key == ord("x"):
+                run_action(_watch_kill_selected, state)
+            elif key == ord("p"):
+                row = _selected_watch_row(state.snapshot, state)
+                if not row or row.get("state") != "queue":
+                    _set_watch_message(state, "Select a queued task to change priority.", "yellow")
+                else:
+                    raw_priority = _prompt_priority(screen, height, width, attrs, row.get("id", ""))
+                    if raw_priority is None or raw_priority == "":
+                        _set_watch_message(state, "Priority change cancelled.", "muted")
+                    else:
+                        try:
+                            priority = int(raw_priority)
+                        except ValueError:
+                            _set_watch_message(state, f"Invalid priority: {raw_priority!r}", "red")
+                        else:
+                            run_action(_watch_change_priority_selected, state, priority)
+    finally:
+        snapshot_worker.stop()
+        action_worker.stop()
+
+    return state.last_running
+
+
+def run_watch(args) -> bool:
+    import curses
+
+    return curses.wrapper(lambda screen: _watch_loop(screen, args))
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="gpu-status",
+        description="Show GPU scheduler status.",
+    )
+    parser.add_argument("--queue", action="store_true",
+                        help="Show full queue (no truncation).")
+    parser.add_argument("--done", type=int, default=None, metavar="N",
+                        help="Number of recent done tasks to show (default: 5; all in watch).")
+    parser.add_argument("--failed", type=int, default=None, metavar="N",
+                        help="Number of recent failed tasks to show (default: 5; all in watch).")
+    parser.add_argument("--json", action="store_true",
+                        help="Emit machine-readable JSON.")
+    parser.add_argument("--watch", action="store_true",
+                        help="Open an interactive persistent status display.")
+    args = parser.parse_args()
+
+    if args.watch and args.json:
+        parser.error("--watch and --json are incompatible")
+    if args.watch:
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            parser.error("--watch requires an interactive terminal")
+        ok = run_watch(args)
+    elif args.json:
+        ok = print_json_status()
+    else:
+        ok = print_status(args)
+
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()

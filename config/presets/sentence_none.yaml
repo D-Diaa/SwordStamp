@@ -1,0 +1,8 @@
+# Sentence baseline.
+generation:
+  num_candidates: 1
+watermark:
+  mode: none
+segmentation:
+  type: sentence
+  backend: nltk

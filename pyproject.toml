@@ -1,0 +1,74 @@
+[project]
+name = "swordstamp"
+version = "1.0.0"
+description = "Artifact for order-robust semantic watermarking over sub-sentence units"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11,<3.12"
+keywords = ["language-models", "semantic-watermarking", "artifact-evaluation"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "accelerate",
+    "backoff",
+    "bert-score",
+    "datasets",
+    "en-core-web-md",
+    "faiss-cpu",
+    "huggingface-hub",
+    "kmeans-pytorch",
+    "matplotlib",
+    "mauve-text",
+    "NearPy",
+    "nltk",
+    "numpy",
+    "openai",
+    "pandas",
+    "parrot @ git+https://github.com/PrithivirajDamodaran/Parrot_Paraphraser.git@03084c54b64019ba5fa0b620b9c70ad81123e458",
+    "peft",
+    "pyarrow",
+    "PyYAML",
+    "rouge-score",
+    "scikit-learn",
+    "scipy",
+    "sentence-transformers",
+    "sentencepiece",
+    "spacy>=3.8.14",
+    "torch",
+    "tqdm",
+    "transformers",
+    "vllm",
+]
+
+[dependency-groups]
+plot = [
+    "matplotlib",
+    "numpy",
+    "pyarrow",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "attacks",
+    "quality",
+    "sampling",
+    "watermarking",
+    "config",
+    "segmentation",
+    "visualization",
+]
+
+[tool.uv.sources]
+en-core-web-md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.8.0/en_core_web_md-3.8.0-py3-none-any.whl" }

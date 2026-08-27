@@ -1,0 +1,101 @@
+- name: llm_judge
+  role: >-
+    You are a strict, impartial judge measuring how faithfully a CANDIDATE text
+    preserves the semantic content of a REFERENCE text.
+  user_template: |
+    [[REFERENCE]]:
+    {ref}
+
+    [[CANDIDATE]]:
+    {gen}
+  scale_block: |-
+    Each criterion names a property and asks how strongly it is present. Rate that on this integer 0-5 scale, judging amount, NOT desirability:
+    - 5 - the property is present fully, or throughout the candidate.
+    - 4 - present in most of the candidate; only minor exceptions.
+    - 3 - present to a moderate degree.
+    - 2 - present in only a few places.
+    - 1 - barely present; an isolated trace.
+    - 0 - entirely absent.
+  rules_block: |-
+    Rules:
+    - Rate the DEGREE each property is present, never whether it is good or bad; score only how much of each occurs and leave direction to the scoring.
+    - Score each criterion independently. content_recall measures whether the reference's content is covered. Separately, detail_precision tracks specific facts, figures, names, and dates on their own: a wrong figure, date, or name lowers detail_precision without being a contradiction, and a reversed claim or sentiment is a contradiction even when every detail is intact.
+    - Base every rating only on the reference and candidate; ignore length, tone, and fluency except where a criterion names them.
+    - If the candidate is empty or unreadable, rate every criterion 0.
+  dimensions:
+    - key: content_recall
+      weight: 1
+      description: >-
+        Does the candidate take up each of the reference's claims, points, and facts - is each
+        one present in some form, whether restated, reworded, opposed, or given a wrong value,
+        rather than omitted entirely?
+    - key: detail_precision
+      weight: 1
+      description: >-
+        Of the specific facts, figures, names, and dates the candidate states, are they
+        correct?
+    - key: information_injection
+      weight: 1
+      description: >-
+        Does the candidate add general claims, content, or context that the reference does
+        not state?
+    - key: contradiction
+      weight: 1
+      description: >-
+        Does the candidate assert a general claim, statement, or sentiment that directly
+        opposes the reference's overall meaning?
+  valence:
+    content_recall: 1
+    detail_precision: 1
+    information_injection: -1
+    contradiction: -1
+
+# Intrinsic-quality criteria all use positive valence.
+- name: llm_quality
+  role: >-
+    You are a strict, impartial judge evaluating the intrinsic quality of a
+    CONTINUATION that a language model produced for a given PROMPT. There is no
+    reference answer - judge the continuation on its own merits as a piece of writing.
+  user_template: |
+    [[PROMPT]]:
+    {prompt}
+
+    [[CONTINUATION]]:
+    {gen}
+  scale_block: |-
+    Score EACH criterion independently on this integer 0-5 scale:
+    - 5 - fully satisfies the criterion; no issues.
+    - 4 - strong; only minor issues.
+    - 3 - acceptable; noticeable issues but the criterion is largely met.
+    - 2 - weak; significant problems on this criterion.
+    - 1 - poor; the criterion is barely met.
+    - 0 - the criterion is not met at all, or the text is empty/unreadable.
+  rules_block: |-
+    Rules:
+    - Judge ONLY the continuation against the criteria above; a more detailed or more confident continuation is not automatically better, and you must never reward padding or filler.
+    - Length is not quality: a short, complete, well-written continuation can score 5, while a long, rambling one can score low.
+    - Judge the continuation only - a weak or short prompt does not excuse a weak continuation, and you are not rating the prompt itself.
+    - Score each criterion on its own merits; do not let a weakness in one criterion drag down the others.
+    - If the continuation is empty, malformed, or unreadable, give every criterion 0.
+  dimensions:
+    - key: fluency
+      weight: 1
+      description: >-
+        Are the sentences grammatical, well-formed, and natural to read, free of spelling,
+        punctuation, and awkward-phrasing errors?
+    - key: coherence
+      weight: 1
+      description: >-
+        Do the ideas connect logically and stay internally consistent? You must strictly penalize
+        any logical contradictions or paradoxes. Do not penalize sentence fragments or lists if the
+        underlying ideas follow a logical sequence.
+    - key: relevance
+      weight: 1
+      description: >-
+        Is it a sensible, on-topic continuation of the first sentence that stays focused
+        without drifting away from it?
+    - key: informativeness
+      weight: 1
+      description: >-
+        Does the text provide substantive, specific facts or mechanisms? Strictly penalize
+        restatements of the prompt, obvious truisms, and vague padding, regardless of length.

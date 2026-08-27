@@ -1,0 +1,80 @@
+name: artifact-ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-and-release-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      MPLCONFIGDIR: /tmp/swordstamp-matplotlib
+      TOKENIZERS_PARALLELISM: "false"
+
+    steps:
+      - name: Check out the anonymous artifact
+        uses: actions/checkout@v4
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.10.2"
+          enable-cache: true
+
+      - name: Set up and verify the frozen artifact
+        run: bash scripts/setup.sh
+
+      - name: Install the bundled scheduler explicitly
+        run: |
+          bash scripts/install_bundled_scheduler.sh --print-plan
+          bash scripts/install_bundled_scheduler.sh --yes
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Validate shell entry points
+        run: >-
+          bash -n scripts/setup.sh scripts/install_bundled_scheduler.sh
+          scripts/experiments/*.sh
+
+      - name: Recheck artifact and bundled scheduler
+        run: |
+          uv run --frozen python scripts/check_artifact.py --scheduler
+          gpu-scheduler --help >/dev/null
+          gpu-enqueue --help >/dev/null
+          gpu-delete --help >/dev/null
+          gpu-status --help >/dev/null
+
+      - name: Smoke-test compact bundle extraction and rendering
+        run: |
+          output="${RUNNER_TEMP}/swordstamp-paper-smoke"
+          uv run --frozen python -m visualization extract \
+            --bundle results/paper --output "$output"
+          uv run --frozen python -m visualization render \
+            --bundle "$output" --output "$output"
+          test -s "$output/tables/pgfplots/teaser/swordstamp.dat"
+          test -s "$output/figures/teaser.png"
+
+      - name: Compile Python sources
+        run: >-
+          uv run --frozen python -m compileall -q
+          attacks comparisons config quality sampling segmentation visualization watermarking
+          tests tools/gpu_scheduler
+
+      - name: Test comparison bridges in the root environment
+        run: >-
+          uv run --frozen python -m unittest -v
+          tests.test_pmark_bridge tests.test_samark_bridge
+
+      - name: Run the CPU test suite
+        run: >-
+          uv run --frozen
+          python -m unittest discover -s tests -v
