@@ -1,0 +1,718 @@
+# Controlled structural-edit fixtures for anchor metrics.
+
+- id: p01
+  original: |
+    Gray wolves live in tightly organized packs across northern forests. A wolf pack hunts large prey such as elk and deer. The pack leader coordinates each hunt through scent marks and howls. Wolf pups are born blind in spring dens. Adult wolves regurgitate food to feed the hungry pups. Wolf populations recover quickly when prey remains abundant.
+  reorder: |
+    Wolf pups are born blind in spring dens. Gray wolves live in tightly organized packs across northern forests. The pack leader coordinates each hunt through scent marks and howls. Wolf populations recover quickly when prey remains abundant. A wolf pack hunts large prey such as elk and deer. Adult wolves regurgitate food to feed the hungry pups.
+  reword: |
+    Gray wolves dwell in highly structured packs throughout the boreal woodlands. A wolf pack pursues sizable quarry like elk and deer. The dominant member of the pack directs every chase using scent marks and vocal howls. Newborn wolf pups arrive sightless inside springtime dens. Grown wolves bring up food to nourish the starving pups. Wolf numbers rebound rapidly whenever prey stays plentiful.
+  merge: |
+    Gray wolves live in tightly organized packs across northern forests, and a wolf pack hunts large prey such as elk and deer, while the pack leader coordinates each hunt through scent marks and howls. Wolf pups are born blind in spring dens; adult wolves regurgitate food to feed the hungry pups, and wolf populations recover quickly when prey remains abundant.
+  split: |
+    Gray wolves live in packs. The packs are tightly organized. They span northern forests. A wolf pack hunts large prey. The prey includes elk and deer. The pack leader coordinates each hunt. The leader uses scent marks and howls. Wolf pups are born blind. They are born in spring dens. Adult wolves regurgitate food. The food feeds the hungry pups. Wolf populations recover quickly. This happens when prey remains abundant.
+
+- id: p02
+  original: |
+    Ocean currents transport warm water from the tropics toward the poles. The Gulf Stream carries heat across the North Atlantic basin. Deep ocean water sinks near the poles because cold water grows dense. The sinking water drives a global circulation called the thermohaline conveyor. Coral reefs thrive in shallow ocean waters near the equator. Ocean tides rise and fall under the pull of the moon.
+  reorder: |
+    The Gulf Stream carries heat across the North Atlantic basin. Ocean tides rise and fall under the pull of the moon. Ocean currents transport warm water from the tropics toward the poles. Coral reefs thrive in shallow ocean waters near the equator. Deep ocean water sinks near the poles because cold water grows dense. The sinking water drives a global circulation called the thermohaline conveyor.
+  reword: |
+    Marine currents move heated water away from the tropics in the direction of the poles. The Gulf Stream conveys warmth over the North Atlantic basin. Deep seawater descends close to the poles since chilled water becomes denser. That descending water powers a worldwide circulation known as the thermohaline conveyor. Coral reefs flourish in the sunlit shallows of the ocean around the equator. The ocean's tides surge and recede beneath the gravitational tug of the moon.
+  merge: |
+    Ocean currents transport warm water from the tropics toward the poles, and the Gulf Stream carries heat across the North Atlantic basin. Deep ocean water sinks near the poles because cold water grows dense, which drives a global circulation called the thermohaline conveyor. Coral reefs thrive in shallow ocean waters near the equator, while ocean tides rise and fall under the pull of the moon.
+  split: |
+    Ocean currents transport warm water. The water moves from the tropics. It heads toward the poles. The Gulf Stream carries heat. The heat crosses the North Atlantic basin. Deep ocean water sinks near the poles. This is because cold water grows dense. The sinking water drives a global circulation. The circulation is called the thermohaline conveyor. Coral reefs thrive in shallow ocean waters. The waters lie near the equator. Ocean tides rise and fall. They respond to the pull of the moon.
+
+- id: p03
+  original: |
+    Stars form inside dense clouds of interstellar gas and dust. A young star ignites when gravity heats the core enough for fusion. Massive stars burn their fuel quickly and explode as brilliant supernovae. A supernova scatters heavy elements across the surrounding space. Planets condense from the leftover disk of debris circling a new star. Distant galaxies drift apart as the universe steadily expands.
+  reorder: |
+    Distant galaxies drift apart as the universe steadily expands. Stars form inside dense clouds of interstellar gas and dust. Massive stars burn their fuel quickly and explode as brilliant supernovae. Planets condense from the leftover disk of debris circling a new star. A young star ignites when gravity heats the core enough for fusion. A supernova scatters heavy elements across the surrounding space.
+  reword: |
+    Stars take shape within thick clouds of interstellar gas and dust. A fledgling star sparks to life once gravity warms its core sufficiently for fusion. Enormous stars consume their fuel rapidly and detonate as dazzling supernovae. A supernova flings heavy elements throughout the nearby space. Planets coalesce out of the remaining disk of rubble orbiting a fresh star. Faraway galaxies move apart while the cosmos continually grows.
+  merge: |
+    Stars form inside dense clouds of interstellar gas and dust, and a young star ignites when gravity heats the core enough for fusion. Massive stars burn their fuel quickly and explode as brilliant supernovae, and a supernova scatters heavy elements across the surrounding space. Planets condense from the leftover disk of debris circling a new star, while distant galaxies drift apart as the universe steadily expands.
+  split: |
+    Stars form inside dense clouds. The clouds hold interstellar gas and dust. A young star ignites. Gravity heats the core. The heat is enough for fusion. Massive stars burn their fuel quickly. They explode as brilliant supernovae. A supernova scatters heavy elements. The elements spread across the surrounding space. Planets condense from a leftover disk. The disk is debris circling a new star. Distant galaxies drift apart. The universe steadily expands.
+
+- id: p04
+  original: |
+    Volcanic eruptions push molten rock upward from deep within the mantle. Cooling lava hardens into dark basalt across the ocean floor. Tectonic plates grind against each other along jagged fault lines. The grinding plates release sudden energy that triggers powerful earthquakes. Sediment layers compress slowly into solid sedimentary rock over millions of years. Erosion carves deep canyons as rivers cut through exposed stone.
+  reorder: |
+    Tectonic plates grind against each other along jagged fault lines. Volcanic eruptions push molten rock upward from deep within the mantle. Sediment layers compress slowly into solid sedimentary rock over millions of years. Cooling lava hardens into dark basalt across the ocean floor. Erosion carves deep canyons as rivers cut through exposed stone. The grinding plates release sudden energy that triggers powerful earthquakes.
+  reword: |
+    Volcanic eruptions force melted rock up from far inside the mantle. Chilling lava solidifies into dark basalt over the seafloor. Tectonic plates scrape past one another along ragged fault lines. The scraping plates discharge abrupt energy that sets off mighty earthquakes. Layers of sediment slowly squeeze into hard sedimentary rock across millions of years. Erosion sculpts deep canyons while rivers slice through bare stone.
+  merge: |
+    Volcanic eruptions push molten rock upward from deep within the mantle, and cooling lava hardens into dark basalt across the ocean floor. Tectonic plates grind against each other along jagged fault lines, which release sudden energy that triggers powerful earthquakes. Sediment layers compress slowly into solid sedimentary rock over millions of years, while erosion carves deep canyons as rivers cut through exposed stone.
+  split: |
+    Volcanic eruptions push molten rock upward. The rock comes from deep within the mantle. Cooling lava hardens into dark basalt. The basalt spreads across the ocean floor. Tectonic plates grind against each other. They meet along jagged fault lines. The grinding plates release sudden energy. The energy triggers powerful earthquakes. Sediment layers compress slowly. They become solid sedimentary rock. This takes millions of years. Erosion carves deep canyons. Rivers cut through exposed stone.
+
+- id: p05
+  original: |
+    Warm air rises and cools as the air climbs higher into the atmosphere. Water vapor condenses into tiny droplets that gather as visible clouds. Heavy clouds release rain when the droplets grow too large to float. Cold fronts collide with warm fronts to spawn violent thunderstorms. Hurricanes draw their energy from the heat of warm ocean surfaces. A long drought develops when rainfall stays scarce for many months.
+  reorder: |
+    Cold fronts collide with warm fronts to spawn violent thunderstorms. Warm air rises and cools as the air climbs higher into the atmosphere. Hurricanes draw their energy from the heat of warm ocean surfaces. Water vapor condenses into tiny droplets that gather as visible clouds. A long drought develops when rainfall stays scarce for many months. Heavy clouds release rain when the droplets grow too large to float.
+  reword: |
+    Warm air ascends and chills while the air mounts higher into the atmosphere. Water vapor turns into minuscule droplets that collect as visible clouds. Laden clouds let go of rain once the droplets become too big to stay aloft. Cold fronts crash into warm fronts to generate fierce thunderstorms. Hurricanes pull their power from the warmth of heated ocean surfaces. A prolonged drought sets in whenever precipitation remains sparse for many months.
+  merge: |
+    Warm air rises and cools as the air climbs higher into the atmosphere, and water vapor condenses into tiny droplets that gather as visible clouds. Heavy clouds release rain when the droplets grow too large to float, while cold fronts collide with warm fronts to spawn violent thunderstorms. Hurricanes draw their energy from the heat of warm ocean surfaces, and a long drought develops when rainfall stays scarce for many months.
+  split: |
+    Warm air rises. The air cools. It climbs higher into the atmosphere. Water vapor condenses. It forms tiny droplets. The droplets gather as visible clouds. Heavy clouds release rain. The droplets grow too large to float. Cold fronts collide with warm fronts. They spawn violent thunderstorms. Hurricanes draw their energy from heat. The heat comes from warm ocean surfaces. A long drought develops. Rainfall stays scarce for many months.
+
+- id: p06
+  original: |
+    Green leaves capture sunlight to power the process of photosynthesis. Plant roots absorb water and minerals from the surrounding soil. A flower attracts buzzing pollinators with bright petals and sweet nectar. Pollinated flowers develop into fruits that protect the growing seeds. Tall trees compete fiercely for sunlight in the crowded forest canopy. Many desert plants store water inside thick fleshy stems.
+  reorder: |
+    Plant roots absorb water and minerals from the surrounding soil. Green leaves capture sunlight to power the process of photosynthesis. Tall trees compete fiercely for sunlight in the crowded forest canopy. A flower attracts buzzing pollinators with bright petals and sweet nectar. Many desert plants store water inside thick fleshy stems. Pollinated flowers develop into fruits that protect the growing seeds.
+  reword: |
+    Verdant leaves trap sunlight to drive the mechanism of photosynthesis. Plant roots soak up water and minerals out of the nearby soil. A blossom lures humming pollinators using vivid petals and sugary nectar. Fertilized blossoms mature into fruits that shield the developing seeds. Towering trees battle intensely for sunlight within the packed forest canopy. Numerous desert plants hoard water inside chunky fleshy stems.
+  merge: |
+    Green leaves capture sunlight to power the process of photosynthesis, and plant roots absorb water and minerals from the surrounding soil. A flower attracts buzzing pollinators with bright petals and sweet nectar, and pollinated flowers develop into fruits that protect the growing seeds. Tall trees compete fiercely for sunlight in the crowded forest canopy, while many desert plants store water inside thick fleshy stems.
+  split: |
+    Green leaves capture sunlight. The sunlight powers a process. The process is photosynthesis. Plant roots absorb water. They also absorb minerals. These come from the surrounding soil. A flower attracts buzzing pollinators. It uses bright petals. It also uses sweet nectar. Pollinated flowers develop into fruits. The fruits protect the growing seeds. Tall trees compete fiercely for sunlight. They grow in the crowded forest canopy. Many desert plants store water. The water sits inside thick fleshy stems.
+
+- id: p07
+  original: |
+    The human heart pumps blood through a vast network of arteries and veins. Healthy lungs exchange oxygen and carbon dioxide with every breath. The stomach breaks down food using strong acids and churning muscles. The brain coordinates thought and movement through billions of firing neurons. Bones provide a rigid frame that supports the entire body. The kidneys filter waste products out of the circulating blood.
+  reorder: |
+    Healthy lungs exchange oxygen and carbon dioxide with every breath. The human heart pumps blood through a vast network of arteries and veins. Bones provide a rigid frame that supports the entire body. The stomach breaks down food using strong acids and churning muscles. The kidneys filter waste products out of the circulating blood. The brain coordinates thought and movement through billions of firing neurons.
+  reword: |
+    The human heart drives blood through an enormous web of arteries and veins. Sound lungs swap oxygen and carbon dioxide with each breath. The stomach dismantles food with potent acids and grinding muscles. The brain organizes thinking and motion via billions of signaling neurons. Bones supply a stiff framework that holds up the whole body. The kidneys strain waste materials from the circulating blood.
+  merge: |
+    The human heart pumps blood through a vast network of arteries and veins, while healthy lungs exchange oxygen and carbon dioxide with every breath. The stomach breaks down food using strong acids and churning muscles, and the brain coordinates thought and movement through billions of firing neurons. Bones provide a rigid frame that supports the entire body, and the kidneys filter waste products out of the circulating blood.
+  split: |
+    The human heart pumps blood. The blood moves through a vast network. The network holds arteries and veins. Healthy lungs exchange oxygen. They also exchange carbon dioxide. This happens with every breath. The stomach breaks down food. It uses strong acids. It also uses churning muscles. The brain coordinates thought and movement. It works through billions of firing neurons. Bones provide a rigid frame. The frame supports the entire body. The kidneys filter waste products. The waste leaves the circulating blood.
+
+- id: p08
+  original: |
+    Atoms bond together to form the molecules that build every substance. An acid releases hydrogen ions when the acid dissolves in water. A base accepts hydrogen ions and neutralizes a strong acid. Chemical reactions either absorb heat or release heat into the surroundings. A catalyst speeds up a reaction without being consumed in the process. Pure metals conduct electricity because loose electrons flow freely between atoms.
+  reorder: |
+    An acid releases hydrogen ions when the acid dissolves in water. Atoms bond together to form the molecules that build every substance. A catalyst speeds up a reaction without being consumed in the process. A base accepts hydrogen ions and neutralizes a strong acid. Pure metals conduct electricity because loose electrons flow freely between atoms. Chemical reactions either absorb heat or release heat into the surroundings.
+  reword: |
+    Atoms link up to create the molecules that compose every material. An acid sets free hydrogen ions once the acid dissolves in water. A base takes in hydrogen ions and cancels out a strong acid. Chemical reactions either soak up heat or give off heat to their environment. A catalyst accelerates a reaction without getting used up during the process. Pure metals carry electricity because untethered electrons move freely among atoms.
+  merge: |
+    Atoms bond together to form the molecules that build every substance, while an acid releases hydrogen ions when the acid dissolves in water. A base accepts hydrogen ions and neutralizes a strong acid, and chemical reactions either absorb heat or release heat into the surroundings. A catalyst speeds up a reaction without being consumed in the process, and pure metals conduct electricity because loose electrons flow freely between atoms.
+  split: |
+    Atoms bond together. They form molecules. The molecules build every substance. An acid releases hydrogen ions. This happens when the acid dissolves in water. A base accepts hydrogen ions. The base neutralizes a strong acid. Chemical reactions absorb heat. Or chemical reactions release heat. The heat goes into the surroundings. A catalyst speeds up a reaction. The catalyst is not consumed in the process. Pure metals conduct electricity. Loose electrons flow freely between atoms.
+
+- id: p09
+  original: |
+    Honeybees collect nectar from flowers to make sweet golden honey. A bee colony houses a single queen who lays thousands of eggs. Worker ants build sprawling underground nests with countless connected tunnels. Butterflies begin life as hungry caterpillars before forming a hard chrysalis. Many beetles wear tough armored shells that guard their soft bodies. Fireflies produce a cold glowing light to attract distant mates.
+  reorder: |
+    Worker ants build sprawling underground nests with countless connected tunnels. Honeybees collect nectar from flowers to make sweet golden honey. Many beetles wear tough armored shells that guard their soft bodies. A bee colony houses a single queen who lays thousands of eggs. Fireflies produce a cold glowing light to attract distant mates. Butterflies begin life as hungry caterpillars before forming a hard chrysalis.
+  reword: |
+    Honeybees gather nectar from blossoms to produce sweet golden honey. A bee colony shelters one lone queen who deposits thousands of eggs. Worker ants construct expansive underground nests with innumerable linked tunnels. Butterflies start out as ravenous caterpillars before shaping a firm chrysalis. Numerous beetles bear sturdy armored shells that protect their soft bodies. Fireflies generate a cool glowing light to lure faraway mates.
+  merge: |
+    Honeybees collect nectar from flowers to make sweet golden honey, and a bee colony houses a single queen who lays thousands of eggs. Worker ants build sprawling underground nests with countless connected tunnels, while butterflies begin life as hungry caterpillars before forming a hard chrysalis. Many beetles wear tough armored shells that guard their soft bodies, and fireflies produce a cold glowing light to attract distant mates.
+  split: |
+    Honeybees collect nectar. The nectar comes from flowers. They make sweet golden honey. A bee colony houses a single queen. The queen lays thousands of eggs. Worker ants build sprawling underground nests. The nests have countless connected tunnels. Butterflies begin life as hungry caterpillars. Then they form a hard chrysalis. Many beetles wear tough armored shells. The shells guard their soft bodies. Fireflies produce a cold glowing light. The light attracts distant mates.
+
+- id: p10
+  original: |
+    Bacteria reproduce rapidly by dividing a single cell into two identical cells. Some bacteria break down dead matter and recycle nutrients into the soil. Viruses hijack living host cells to copy their own genetic material. A vaccine trains the immune system to recognize a specific dangerous pathogen. Beneficial gut microbes help the body digest food and fight off invaders. Antibiotics kill harmful bacteria but leave most viruses completely unharmed.
+  reorder: |
+    Some bacteria break down dead matter and recycle nutrients into the soil. Bacteria reproduce rapidly by dividing a single cell into two identical cells. A vaccine trains the immune system to recognize a specific dangerous pathogen. Viruses hijack living host cells to copy their own genetic material. Antibiotics kill harmful bacteria but leave most viruses completely unharmed. Beneficial gut microbes help the body digest food and fight off invaders.
+  reword: |
+    Bacteria multiply quickly by splitting one cell into two identical cells. Certain bacteria decompose dead matter and return nutrients to the soil. Viruses commandeer living host cells to replicate their own genetic material. A vaccine teaches the immune system to identify a particular dangerous pathogen. Helpful gut microbes assist the body in digesting food and repelling invaders. Antibiotics destroy harmful bacteria yet leave most viruses entirely untouched.
+  merge: |
+    Bacteria reproduce rapidly by dividing a single cell into two identical cells, and some bacteria break down dead matter and recycle nutrients into the soil. Viruses hijack living host cells to copy their own genetic material, while a vaccine trains the immune system to recognize a specific dangerous pathogen. Beneficial gut microbes help the body digest food and fight off invaders, and antibiotics kill harmful bacteria but leave most viruses completely unharmed.
+  split: |
+    Bacteria reproduce rapidly. They divide a single cell. The cell becomes two identical cells. Some bacteria break down dead matter. They recycle nutrients into the soil. Viruses hijack living host cells. They copy their own genetic material. A vaccine trains the immune system. The system learns to recognize a specific dangerous pathogen. Beneficial gut microbes help the body. They aid it to digest food. They also help it fight off invaders. Antibiotics kill harmful bacteria. But antibiotics leave most viruses completely unharmed.
+- id: p11
+  original: |
+    Ancient Rome began as a small settlement on the Tiber River. The Roman Republic governed the city through elected consuls. Roman legions conquered most of the Mediterranean world. Roman engineers built aqueducts to carry water across long distances. The Roman Empire reached its greatest extent under Emperor Trajan. Rome eventually fell to invading tribes in the fifth century.
+  reorder: |
+    Roman engineers built aqueducts to carry water across long distances. Ancient Rome began as a small settlement on the Tiber River. Roman legions conquered most of the Mediterranean world. Rome eventually fell to invading tribes in the fifth century. The Roman Republic governed the city through elected consuls. The Roman Empire reached its greatest extent under Emperor Trajan.
+  reword: |
+    Rome originated as a modest village beside the Tiber River. Elected consuls administered the city under the Roman Republic. The armies of Rome subdued nearly all of the Mediterranean region. To transport water over great distances, Roman engineers constructed aqueducts. Under Emperor Trajan, the Roman Empire grew to its largest size. In the fifth century, invading tribes brought about Rome's collapse.
+  merge: |
+    Ancient Rome began as a small settlement on the Tiber River, and the Roman Republic governed the city through elected consuls. Roman legions conquered most of the Mediterranean world, while Roman engineers built aqueducts to carry water across long distances. The Roman Empire reached its greatest extent under Emperor Trajan, and Rome eventually fell to invading tribes in the fifth century.
+  split: |
+    Ancient Rome began as a small settlement. The settlement sat on the Tiber River. The Roman Republic governed the city. It did so through elected consuls. Roman legions conquered most of the world. That world was the Mediterranean. Roman engineers built aqueducts. The aqueducts carried water across long distances. The Roman Empire reached its greatest extent. This happened under Emperor Trajan. Rome eventually fell to invading tribes. The fall came in the fifth century.
+
+- id: p12
+  original: |
+    Medieval Europe was organized around the feudal system of lords and vassals. Castles served as fortified homes for medieval nobles. Monasteries preserved ancient texts through careful copying by monks. The Catholic Church held enormous influence over medieval daily life. Knights swore oaths of loyalty to their feudal lords. The Black Death killed millions of Europeans during the fourteenth century.
+  reorder: |
+    The Catholic Church held enormous influence over medieval daily life. Castles served as fortified homes for medieval nobles. Medieval Europe was organized around the feudal system of lords and vassals. The Black Death killed millions of Europeans during the fourteenth century. Knights swore oaths of loyalty to their feudal lords. Monasteries preserved ancient texts through careful copying by monks.
+  reword: |
+    The feudal arrangement of lords and vassals structured European society in the Middle Ages. Fortified residences for the medieval aristocracy took the form of castles. Through diligent copying by monks, monasteries kept ancient writings safe. Daily existence in the medieval era was profoundly shaped by the Catholic Church. To their feudal lords, knights pledged vows of allegiance. During the fourteenth century, the Black Death claimed the lives of millions across Europe.
+  merge: |
+    Medieval Europe was organized around the feudal system of lords and vassals, and castles served as fortified homes for medieval nobles. Monasteries preserved ancient texts through careful copying by monks, while the Catholic Church held enormous influence over medieval daily life. Knights swore oaths of loyalty to their feudal lords, and the Black Death killed millions of Europeans during the fourteenth century.
+  split: |
+    Medieval Europe was organized around the feudal system. The system linked lords and vassals. Castles served as fortified homes. The homes belonged to medieval nobles. Monasteries preserved ancient texts. Monks did careful copying. The Catholic Church held enormous influence. The influence shaped medieval daily life. Knights swore oaths of loyalty. The oaths went to their feudal lords. The Black Death killed millions of Europeans. The deaths came during the fourteenth century.
+
+- id: p13
+  original: |
+    The Renaissance began in the Italian city of Florence during the fourteenth century. Renaissance artists revived the classical styles of ancient Greece and Rome. Leonardo da Vinci painted masterpieces and designed remarkable inventions. Wealthy patrons like the Medici family funded countless Renaissance works. Renaissance scholars studied ancient manuscripts to recover lost knowledge. The Renaissance spread northward across Europe over many decades.
+  reorder: |
+    Renaissance scholars studied ancient manuscripts to recover lost knowledge. The Renaissance began in the Italian city of Florence during the fourteenth century. Leonardo da Vinci painted masterpieces and designed remarkable inventions. Renaissance artists revived the classical styles of ancient Greece and Rome. The Renaissance spread northward across Europe over many decades. Wealthy patrons like the Medici family funded countless Renaissance works.
+  reword: |
+    During the fourteenth century, the Renaissance emerged in Florence, an Italian city. The classical manners of ancient Greece and Rome were brought back by Renaissance artists. Leonardo da Vinci produced great paintings and conceived extraordinary inventions. Countless works of the Renaissance were financed by rich patrons such as the Medici family. To retrieve lost learning, Renaissance scholars examined ancient manuscripts. Across Europe, the Renaissance moved northward over the course of many decades.
+  merge: |
+    The Renaissance began in the Italian city of Florence during the fourteenth century, and Renaissance artists revived the classical styles of ancient Greece and Rome. Leonardo da Vinci painted masterpieces and designed remarkable inventions, while wealthy patrons like the Medici family funded countless Renaissance works. Renaissance scholars studied ancient manuscripts to recover lost knowledge, and the Renaissance spread northward across Europe over many decades.
+  split: |
+    The Renaissance began in the Italian city of Florence. This occurred during the fourteenth century. Renaissance artists revived the classical styles. The styles came from ancient Greece and Rome. Leonardo da Vinci painted masterpieces. He also designed remarkable inventions. Wealthy patrons funded countless Renaissance works. These patrons included the Medici family. Renaissance scholars studied ancient manuscripts. They sought to recover lost knowledge. The Renaissance spread northward across Europe. The spread took many decades.
+
+- id: p14
+  original: |
+    World War II began when Germany invaded Poland in 1939. The Allied powers fought against the Axis nations across multiple continents. The attack on Pearl Harbor brought the United States into the war. Soviet forces halted the German advance at the city of Stalingrad. The Allied landings at Normandy opened a new front in France. World War II ended in 1945 after the surrender of Japan.
+  reorder: |
+    The attack on Pearl Harbor brought the United States into the war. World War II began when Germany invaded Poland in 1939. Soviet forces halted the German advance at the city of Stalingrad. The Allied powers fought against the Axis nations across multiple continents. World War II ended in 1945 after the surrender of Japan. The Allied landings at Normandy opened a new front in France.
+  reword: |
+    In 1939, Germany's invasion of Poland set off World War II. Across several continents, the Allied powers battled the Axis nations. America was drawn into the conflict by the assault on Pearl Harbor. At the city of Stalingrad, Soviet troops stopped the German push. A fresh front in France was created by the Allied landings at Normandy. Following Japan's surrender, World War II concluded in 1945.
+  merge: |
+    World War II began when Germany invaded Poland in 1939, and the Allied powers fought against the Axis nations across multiple continents. The attack on Pearl Harbor brought the United States into the war, while Soviet forces halted the German advance at the city of Stalingrad. The Allied landings at Normandy opened a new front in France, and World War II ended in 1945 after the surrender of Japan.
+  split: |
+    World War II began. Germany invaded Poland. The invasion happened in 1939. The Allied powers fought against the Axis nations. They fought across multiple continents. The attack on Pearl Harbor happened. It brought the United States into the war. Soviet forces halted the German advance. They stopped it at the city of Stalingrad. The Allied landings at Normandy opened a new front. The front was in France. World War II ended in 1945. The end came after the surrender of Japan.
+
+- id: p15
+  original: |
+    Ancient Egypt developed along the fertile banks of the Nile River. Egyptian pharaohs ruled as both political leaders and living gods. The pyramids of Giza served as massive tombs for Egyptian kings. Egyptian scribes recorded events using a script called hieroglyphics. The annual flooding of the Nile enriched the soil for Egyptian farmers. Ancient Egypt endured for roughly three thousand years.
+  reorder: |
+    The pyramids of Giza served as massive tombs for Egyptian kings. Ancient Egypt developed along the fertile banks of the Nile River. The annual flooding of the Nile enriched the soil for Egyptian farmers. Egyptian pharaohs ruled as both political leaders and living gods. Ancient Egypt endured for roughly three thousand years. Egyptian scribes recorded events using a script called hieroglyphics.
+  reword: |
+    Along the rich banks of the Nile River, ancient Egypt arose. Serving as political chiefs and living deities alike, Egyptian pharaohs held power. Enormous tombs for Egyptian kings were provided by the pyramids of Giza. Using a writing system known as hieroglyphics, Egyptian scribes documented events. The yearly inundation of the Nile made the soil fruitful for Egyptian farmers. For approximately three thousand years, ancient Egypt persisted.
+  merge: |
+    Ancient Egypt developed along the fertile banks of the Nile River, and Egyptian pharaohs ruled as both political leaders and living gods. The pyramids of Giza served as massive tombs for Egyptian kings, while Egyptian scribes recorded events using a script called hieroglyphics. The annual flooding of the Nile enriched the soil for Egyptian farmers, and ancient Egypt endured for roughly three thousand years.
+  split: |
+    Ancient Egypt developed along the banks. The banks of the Nile River were fertile. Egyptian pharaohs ruled as political leaders. They were also living gods. The pyramids of Giza served as tombs. The tombs were massive. They held Egyptian kings. Egyptian scribes recorded events. They used a script. The script was called hieroglyphics. The annual flooding of the Nile enriched the soil. The soil served Egyptian farmers. Ancient Egypt endured for roughly three thousand years.
+
+- id: p16
+  original: |
+    The Industrial Revolution began in Britain during the late eighteenth century. Steam engines powered new factories and transformed manufacturing. Textile mills employed thousands of workers in crowded conditions. Railways connected distant cities and accelerated the movement of goods. Rapid industrial growth caused cities to expand at an unprecedented pace. The Industrial Revolution reshaped economies throughout the western world.
+  reorder: |
+    Railways connected distant cities and accelerated the movement of goods. The Industrial Revolution began in Britain during the late eighteenth century. Textile mills employed thousands of workers in crowded conditions. Steam engines powered new factories and transformed manufacturing. The Industrial Revolution reshaped economies throughout the western world. Rapid industrial growth caused cities to expand at an unprecedented pace.
+  reword: |
+    In Britain, the Industrial Revolution got underway in the latter part of the eighteenth century. New factories were driven by steam engines, and manufacturing was transformed. Thousands of laborers worked in textile mills under cramped conditions. By linking far-off cities, railways sped up the transport of goods. The swift growth of industry made cities swell at an extraordinary rate. Economies across the western world were reshaped by the Industrial Revolution.
+  merge: |
+    The Industrial Revolution began in Britain during the late eighteenth century, and steam engines powered new factories and transformed manufacturing. Textile mills employed thousands of workers in crowded conditions, while railways connected distant cities and accelerated the movement of goods. Rapid industrial growth caused cities to expand at an unprecedented pace, and the Industrial Revolution reshaped economies throughout the western world.
+  split: |
+    The Industrial Revolution began in Britain. It started during the late eighteenth century. Steam engines powered new factories. They transformed manufacturing. Textile mills employed thousands of workers. The conditions were crowded. Railways connected distant cities. They accelerated the movement of goods. Rapid industrial growth caused cities to expand. The expansion came at an unprecedented pace. The Industrial Revolution reshaped economies. The change spread throughout the western world.
+
+- id: p17
+  original: |
+    Portuguese sailors pioneered long ocean voyages along the African coast. Christopher Columbus reached the Americas while seeking a route to Asia. Ferdinand Magellan's expedition completed the first circumnavigation of the globe. European explorers mapped previously unknown coastlines across the world. The voyages of exploration opened vast new trade networks between continents. These daring journeys carried great risks for the early navigators.
+  reorder: |
+    European explorers mapped previously unknown coastlines across the world. Portuguese sailors pioneered long ocean voyages along the African coast. Ferdinand Magellan's expedition completed the first circumnavigation of the globe. Christopher Columbus reached the Americas while seeking a route to Asia. These daring journeys carried great risks for the early navigators. The voyages of exploration opened vast new trade networks between continents.
+  reword: |
+    Lengthy sea journeys down the African coast were first undertaken by Portuguese sailors. In his search for a passage to Asia, Christopher Columbus arrived in the Americas. The earliest voyage around the entire world was accomplished by Ferdinand Magellan's expedition. Coastlines that had been unknown were charted by European explorers all over the world. New and extensive trade routes between continents were opened by the voyages of exploration. For the early navigators, these bold expeditions involved tremendous dangers.
+  merge: |
+    Portuguese sailors pioneered long ocean voyages along the African coast, and Christopher Columbus reached the Americas while seeking a route to Asia. Ferdinand Magellan's expedition completed the first circumnavigation of the globe, while European explorers mapped previously unknown coastlines across the world. The voyages of exploration opened vast new trade networks between continents, and these daring journeys carried great risks for the early navigators.
+  split: |
+    Portuguese sailors pioneered long ocean voyages. The voyages followed the African coast. Christopher Columbus reached the Americas. He was seeking a route to Asia. Ferdinand Magellan's expedition completed a great feat. It was the first circumnavigation of the globe. European explorers mapped coastlines. The coastlines were previously unknown. They lay across the world. The voyages of exploration opened new trade networks. The networks were vast. They linked continents. These daring journeys carried great risks. The risks fell on the early navigators.
+
+- id: p18
+  original: |
+    Queen Elizabeth the First ruled England for forty-four years. Queen Elizabeth never married and was called the Virgin Queen. Elizabeth's navy defeated the powerful Spanish Armada in 1588. The Elizabethan era produced great playwrights such as William Shakespeare. Queen Elizabeth restored the Protestant church across England. The reign of Elizabeth is remembered as a golden age.
+  reorder: |
+    The Elizabethan era produced great playwrights such as William Shakespeare. Queen Elizabeth the First ruled England for forty-four years. Elizabeth's navy defeated the powerful Spanish Armada in 1588. Queen Elizabeth never married and was called the Virgin Queen. The reign of Elizabeth is remembered as a golden age. Queen Elizabeth restored the Protestant church across England.
+  reword: |
+    For forty-four years, Queen Elizabeth the First governed England. Earning the name the Virgin Queen, Queen Elizabeth remained unmarried. In 1588, the mighty Spanish Armada was defeated by Elizabeth's navy. Notable dramatists like William Shakespeare emerged during the Elizabethan era. Throughout England, the Protestant church was reestablished by Queen Elizabeth. As a golden age, the reign of Elizabeth lives on in memory.
+  merge: |
+    Queen Elizabeth the First ruled England for forty-four years, and Queen Elizabeth never married and was called the Virgin Queen. Elizabeth's navy defeated the powerful Spanish Armada in 1588, while the Elizabethan era produced great playwrights such as William Shakespeare. Queen Elizabeth restored the Protestant church across England, and the reign of Elizabeth is remembered as a golden age.
+  split: |
+    Queen Elizabeth the First ruled England. The reign lasted forty-four years. Queen Elizabeth never married. She was called the Virgin Queen. Elizabeth's navy defeated the Spanish Armada. The Armada was powerful. The defeat came in 1588. The Elizabethan era produced great playwrights. One such playwright was William Shakespeare. Queen Elizabeth restored the Protestant church. The restoration spread across England. The reign of Elizabeth is remembered. People call it a golden age.
+
+- id: p19
+  original: |
+    Johannes Gutenberg invented the movable-type printing press around 1440. The printing press allowed books to be produced quickly and cheaply. Printed books spread new ideas across Europe at remarkable speed. The printing press helped fuel the Protestant Reformation through pamphlets. Rising literacy followed the wider availability of printed books. The printing press is regarded as one of history's great inventions.
+  reorder: |
+    Printed books spread new ideas across Europe at remarkable speed. Johannes Gutenberg invented the movable-type printing press around 1440. The printing press helped fuel the Protestant Reformation through pamphlets. The printing press allowed books to be produced quickly and cheaply. The printing press is regarded as one of history's great inventions. Rising literacy followed the wider availability of printed books.
+  reword: |
+    Around 1440, Johannes Gutenberg devised the movable-type printing press. Books could be made swiftly and inexpensively thanks to the printing press. Across Europe, new ideas were carried by printed books at an astonishing pace. Through pamphlets, the printing press helped drive the Protestant Reformation. The broader availability of printed books was followed by growing literacy. Among history's great inventions, the printing press is counted as one.
+  merge: |
+    Johannes Gutenberg invented the movable-type printing press around 1440, and the printing press allowed books to be produced quickly and cheaply. Printed books spread new ideas across Europe at remarkable speed, while the printing press helped fuel the Protestant Reformation through pamphlets. Rising literacy followed the wider availability of printed books, and the printing press is regarded as one of history's great inventions.
+  split: |
+    Johannes Gutenberg invented the movable-type printing press. The invention came around 1440. The printing press allowed books to be produced. The production was quick and cheap. Printed books spread new ideas. The ideas crossed Europe. The spread happened at remarkable speed. The printing press helped fuel the Protestant Reformation. It did so through pamphlets. Rising literacy followed. It came with the wider availability of printed books. The printing press is regarded highly. It is one of history's great inventions.
+
+- id: p20
+  original: |
+    Ancient Greece consisted of many independent city-states such as Athens and Sparta. Athens developed an early form of democratic government. Greek philosophers like Socrates explored questions about knowledge and ethics. The Greeks built magnificent temples honoring their many gods. Greek armies repelled the massive Persian invasions in the fifth century. Ancient Greece laid the foundations of western civilization.
+  reorder: |
+    Greek philosophers like Socrates explored questions about knowledge and ethics. Ancient Greece consisted of many independent city-states such as Athens and Sparta. The Greeks built magnificent temples honoring their many gods. Athens developed an early form of democratic government. Ancient Greece laid the foundations of western civilization. Greek armies repelled the massive Persian invasions in the fifth century.
+  reword: |
+    Numerous independent city-states, including Athens and Sparta, made up ancient Greece. An early version of democratic rule was created in Athens. Questions concerning knowledge and ethics were examined by Greek philosophers such as Socrates. To honor their numerous gods, the Greeks constructed splendid temples. In the fifth century, the enormous Persian invasions were driven back by Greek armies. The groundwork of western civilization was established by ancient Greece.
+  merge: |
+    Ancient Greece consisted of many independent city-states such as Athens and Sparta, and Athens developed an early form of democratic government. Greek philosophers like Socrates explored questions about knowledge and ethics, while the Greeks built magnificent temples honoring their many gods. Greek armies repelled the massive Persian invasions in the fifth century, and ancient Greece laid the foundations of western civilization.
+  split: |
+    Ancient Greece consisted of many independent city-states. These city-states included Athens and Sparta. Athens developed an early form of government. The form was democratic. Greek philosophers explored questions. The philosophers included Socrates. The questions concerned knowledge and ethics. The Greeks built magnificent temples. The temples honored their many gods. Greek armies repelled the Persian invasions. The invasions were massive. They came in the fifth century. Ancient Greece laid the foundations. The foundations were of western civilization.
+- id: p21
+  original: |
+    The software company launched in 2010. The software company employs three thousand engineers. The flagship product is a project management tool. The project management tool serves over a million businesses. A new office opened in Berlin last year. The Berlin office focuses on artificial intelligence research.
+  reorder: |
+    A new office opened in Berlin last year. The flagship product is a project management tool. The software company launched in 2010. The Berlin office focuses on artificial intelligence research. The software company employs three thousand engineers. The project management tool serves over a million businesses.
+  reword: |
+    The software company was founded back in 2010. Three thousand engineers work at the software company. Its main offering is a tool for managing projects. That project management tool is used by more than a million businesses. Last year, a fresh office was established in Berlin. The Berlin branch concentrates on research into artificial intelligence.
+  merge: |
+    The software company launched in 2010, and the software company employs three thousand engineers. The flagship product is a project management tool, which serves over a million businesses. A new office opened in Berlin last year, and the Berlin office focuses on artificial intelligence research.
+  split: |
+    The software company launched. The year was 2010. The software company employs engineers. There are three thousand of them. The flagship product is a tool. The tool is for project management. The project management tool serves businesses. There are over a million of them. A new office opened last year. The office is in Berlin. The Berlin office focuses on research. The research is on artificial intelligence.
+- id: p22
+  original: |
+    Electric vehicles run on rechargeable battery packs. Electric vehicles produce no tailpipe emissions. Charging stations are spreading across major highways. Charging stations can refill a battery in under an hour. Battery costs have fallen sharply over the past decade. Falling battery costs make electric vehicles more affordable.
+  reorder: |
+    Charging stations are spreading across major highways. Electric vehicles run on rechargeable battery packs. Battery costs have fallen sharply over the past decade. Electric vehicles produce no tailpipe emissions. Charging stations can refill a battery in under an hour. Falling battery costs make electric vehicles more affordable.
+  reword: |
+    Electric vehicles are powered by battery packs that can be recharged. Electric vehicles emit nothing from a tailpipe. Stations for charging are appearing along major highways. These stations are able to top up a battery in less than sixty minutes. Over the last ten years, the price of batteries has dropped dramatically. Because battery prices have dropped, electric vehicles cost less to buy.
+  merge: |
+    Electric vehicles run on rechargeable battery packs, and electric vehicles produce no tailpipe emissions. Charging stations are spreading across major highways, and charging stations can refill a battery in under an hour. Battery costs have fallen sharply over the past decade, and falling battery costs make electric vehicles more affordable.
+  split: |
+    Electric vehicles run on battery packs. The battery packs are rechargeable. Electric vehicles produce emissions. They produce no tailpipe emissions. Charging stations are spreading. They spread across major highways. Charging stations can refill a battery. They do it in under an hour. Battery costs have fallen. They fell sharply over the past decade. Falling battery costs help. They make electric vehicles more affordable.
+- id: p23
+  original: |
+    Modern smartphones combine a camera and a computer. Modern smartphones connect to high-speed wireless networks. The touchscreen display covers most of the front surface. The touchscreen display responds to multiple finger gestures. App stores offer millions of downloadable programs. Downloadable programs extend the phone's everyday usefulness.
+  reorder: |
+    App stores offer millions of downloadable programs. Modern smartphones connect to high-speed wireless networks. The touchscreen display covers most of the front surface. Modern smartphones combine a camera and a computer. Downloadable programs extend the phone's everyday usefulness. The touchscreen display responds to multiple finger gestures.
+  reword: |
+    Today's smartphones merge a camera with a computer. Today's smartphones link up to fast wireless networks. Most of the front surface is taken up by the touchscreen display. That touchscreen display reacts to several finger gestures at once. Stores for apps provide millions of programs to download. Such downloadable programs broaden the phone's daily usefulness.
+  merge: |
+    Modern smartphones combine a camera and a computer, and modern smartphones connect to high-speed wireless networks. The touchscreen display covers most of the front surface, and the touchscreen display responds to multiple finger gestures. App stores offer millions of downloadable programs, which extend the phone's everyday usefulness.
+  split: |
+    Modern smartphones combine devices. They combine a camera and a computer. Modern smartphones connect to networks. The networks are high-speed and wireless. The touchscreen display covers a surface. It covers most of the front. The touchscreen display responds to gestures. It responds to multiple finger gestures. App stores offer programs. They offer millions of downloadable programs. Such programs extend usefulness. They extend the phone's everyday usefulness.
+- id: p24
+  original: |
+    The renewable energy industry includes solar, wind, and hydropower. The renewable energy industry attracts billions in annual investment. Solar panels convert sunlight directly into electricity. Wind turbines harness moving air to spin generators. Government subsidies have accelerated the industry's growth. Government subsidies reduce the upfront cost of clean installations.
+  reorder: |
+    Solar panels convert sunlight directly into electricity. The renewable energy industry attracts billions in annual investment. Wind turbines harness moving air to spin generators. The renewable energy industry includes solar, wind, and hydropower. Government subsidies reduce the upfront cost of clean installations. Government subsidies have accelerated the industry's growth.
+  reword: |
+    Solar, wind, and hydropower all fall under the renewable energy industry. The renewable energy industry draws billions of dollars in investment each year. Sunlight is turned straight into electricity by solar panels. Moving air is captured by wind turbines to drive generators. The industry's expansion has been sped up by government subsidies. Such subsidies lower the initial price of clean installations.
+  merge: |
+    The renewable energy industry includes solar, wind, and hydropower, and the renewable energy industry attracts billions in annual investment. Solar panels convert sunlight directly into electricity, while wind turbines harness moving air to spin generators. Government subsidies have accelerated the industry's growth, and government subsidies reduce the upfront cost of clean installations.
+  split: |
+    The renewable energy industry includes sources. It includes solar, wind, and hydropower. The renewable energy industry attracts investment. It attracts billions annually. Solar panels convert sunlight. They convert it directly into electricity. Wind turbines harness moving air. The air spins generators. Government subsidies have helped. They accelerated the industry's growth. Government subsidies reduce cost. They reduce the upfront cost of clean installations.
+- id: p25
+  original: |
+    E-commerce lets shoppers buy goods over the internet. E-commerce operates around the clock without physical stores. Secure payment systems protect customers during checkout. Secure payment systems encrypt sensitive financial details. Delivery networks ship purchases directly to homes. Delivery networks now reach even remote rural towns.
+  reorder: |
+    Secure payment systems protect customers during checkout. E-commerce lets shoppers buy goods over the internet. Delivery networks ship purchases directly to homes. E-commerce operates around the clock without physical stores. Secure payment systems encrypt sensitive financial details. Delivery networks now reach even remote rural towns.
+  reword: |
+    E-commerce allows buyers to purchase products through the internet. E-commerce runs nonstop and needs no physical stores. During checkout, customers are safeguarded by secure payment systems. Those secure payment systems scramble sensitive financial details. Networks for delivery transport purchases straight to people's homes. Such delivery networks today even serve far-off rural towns.
+  merge: |
+    E-commerce lets shoppers buy goods over the internet, and e-commerce operates around the clock without physical stores. Secure payment systems protect customers during checkout, and secure payment systems encrypt sensitive financial details. Delivery networks ship purchases directly to homes, and delivery networks now reach even remote rural towns.
+  split: |
+    E-commerce lets shoppers buy goods. They buy over the internet. E-commerce operates around the clock. It needs no physical stores. Secure payment systems protect customers. They protect them during checkout. Secure payment systems encrypt details. The details are sensitive and financial. Delivery networks ship purchases. They ship directly to homes. Delivery networks now reach towns. They reach even remote rural towns.
+- id: p26
+  original: |
+    Semiconductors form the foundation of modern electronics. Semiconductors are manufactured in highly specialized fabrication plants. A single chip can hold billions of microscopic transistors. The microscopic transistors switch electrical signals on and off. Global supply shortages disrupted many industries recently. Global supply shortages prompted heavy investment in new factories.
+  reorder: |
+    A single chip can hold billions of microscopic transistors. Semiconductors form the foundation of modern electronics. Global supply shortages prompted heavy investment in new factories. Semiconductors are manufactured in highly specialized fabrication plants. The microscopic transistors switch electrical signals on and off. Global supply shortages disrupted many industries recently.
+  reword: |
+    Semiconductors serve as the bedrock of modern electronics. Semiconductors are produced inside highly specialized fabrication plants. Billions of microscopic transistors can fit on a single chip. Those microscopic transistors turn electrical signals on and off. Recently, worldwide supply shortages threw many industries into disorder. Such worldwide shortages spurred large spending on new factories.
+  merge: |
+    Semiconductors form the foundation of modern electronics, and semiconductors are manufactured in highly specialized fabrication plants. A single chip can hold billions of microscopic transistors, which switch electrical signals on and off. Global supply shortages disrupted many industries recently, and global supply shortages prompted heavy investment in new factories.
+  split: |
+    Semiconductors form a foundation. It is the foundation of modern electronics. Semiconductors are manufactured in plants. The plants are highly specialized fabrication plants. A single chip can hold transistors. It holds billions of microscopic transistors. The microscopic transistors switch signals. They switch electrical signals on and off. Global supply shortages disrupted industries. They disrupted many industries recently. Global supply shortages prompted investment. The investment was heavy and in new factories.
+- id: p27
+  original: |
+    Social media platforms connect users across the entire world. Social media platforms rely on advertising for most revenue. News feeds rank posts using complex algorithms. Complex algorithms predict what each user wants to see. Privacy concerns have sparked stricter government regulation. Stricter government regulation forces platforms to protect personal data.
+  reorder: |
+    News feeds rank posts using complex algorithms. Social media platforms connect users across the entire world. Privacy concerns have sparked stricter government regulation. Social media platforms rely on advertising for most revenue. Complex algorithms predict what each user wants to see. Stricter government regulation forces platforms to protect personal data.
+  reword: |
+    Social media platforms link people all around the globe. Social media platforms depend on advertising for the bulk of their income. Posts in news feeds are ordered by complex algorithms. Those complex algorithms forecast what each user wishes to see. Worries about privacy have triggered tougher government regulation. Such tougher regulation compels platforms to safeguard personal data.
+  merge: |
+    Social media platforms connect users across the entire world, and social media platforms rely on advertising for most revenue. News feeds rank posts using complex algorithms, which predict what each user wants to see. Privacy concerns have sparked stricter government regulation, and stricter government regulation forces platforms to protect personal data.
+  split: |
+    Social media platforms connect users. They connect users across the entire world. Social media platforms rely on advertising. They rely on it for most revenue. News feeds rank posts. They rank them using complex algorithms. Complex algorithms predict things. They predict what each user wants to see. Privacy concerns have sparked regulation. The regulation is stricter and from government. Stricter government regulation forces platforms. It forces them to protect personal data.
+- id: p28
+  original: |
+    Cloud computing delivers servers and storage over the internet. Cloud computing lets companies avoid buying their own hardware. Data centers house thousands of networked machines. Data centers consume enormous amounts of electricity daily. Pay-as-you-go pricing scales with each customer's actual usage. Pay-as-you-go pricing appeals strongly to growing small businesses.
+  reorder: |
+    Data centers house thousands of networked machines. Cloud computing delivers servers and storage over the internet. Pay-as-you-go pricing scales with each customer's actual usage. Cloud computing lets companies avoid buying their own hardware. Data centers consume enormous amounts of electricity daily. Pay-as-you-go pricing appeals strongly to growing small businesses.
+  reword: |
+    Cloud computing provides servers and storage through the internet. Cloud computing allows firms to skip purchasing hardware of their own. Thousands of networked machines are kept inside data centers. Those data centers use vast quantities of electricity every day. Pay-as-you-go pricing adjusts to how much each customer truly uses. Such pricing holds strong appeal for expanding small businesses.
+  merge: |
+    Cloud computing delivers servers and storage over the internet, and cloud computing lets companies avoid buying their own hardware. Data centers house thousands of networked machines, and data centers consume enormous amounts of electricity daily. Pay-as-you-go pricing scales with each customer's actual usage, and pay-as-you-go pricing appeals strongly to growing small businesses.
+  split: |
+    Cloud computing delivers servers and storage. It delivers them over the internet. Cloud computing lets companies avoid something. They avoid buying their own hardware. Data centers house machines. They house thousands of networked machines. Data centers consume electricity. They consume enormous amounts daily. Pay-as-you-go pricing scales. It scales with each customer's actual usage. Pay-as-you-go pricing appeals. It appeals strongly to growing small businesses.
+- id: p29
+  original: |
+    The startup raised its first funding round in 2018. The startup grew from five employees to two hundred. Monthly revenue doubled in each of the first three years. Rapid revenue growth attracted several venture capital firms. The startup expanded into four new countries last year. International expansion broadened the startup's customer base significantly.
+  reorder: |
+    The startup grew from five employees to two hundred. The startup raised its first funding round in 2018. Rapid revenue growth attracted several venture capital firms. Monthly revenue doubled in each of the first three years. The startup expanded into four new countries last year. International expansion broadened the startup's customer base significantly.
+  reword: |
+    In 2018 the startup secured its very first round of funding. The startup expanded from five staff members up to two hundred. During each of the first three years, monthly revenue grew twofold. That swift revenue growth drew in several venture capital firms. Last year the startup moved into four additional countries. Going international widened the startup's customer base considerably.
+  merge: |
+    The startup raised its first funding round in 2018, and the startup grew from five employees to two hundred. Monthly revenue doubled in each of the first three years, which attracted several venture capital firms. The startup expanded into four new countries last year, and international expansion broadened the startup's customer base significantly.
+  split: |
+    The startup raised a funding round. It was the first round, in 2018. The startup grew in size. It grew from five employees to two hundred. Monthly revenue doubled. It doubled in each of the first three years. Rapid revenue growth had an effect. It attracted several venture capital firms. The startup expanded last year. It expanded into four new countries. International expansion helped. It broadened the startup's customer base significantly.
+- id: p30
+  original: |
+    Online banking lets customers manage accounts from any device. Online banking eliminates most trips to a physical branch. Mobile apps display balances and recent transactions instantly. Mobile apps send alerts whenever suspicious activity occurs. Two-factor authentication adds an extra layer of security. Two-factor authentication blocks many unauthorized login attempts.
+  reorder: |
+    Mobile apps display balances and recent transactions instantly. Online banking lets customers manage accounts from any device. Two-factor authentication adds an extra layer of security. Online banking eliminates most trips to a physical branch. Mobile apps send alerts whenever suspicious activity occurs. Two-factor authentication blocks many unauthorized login attempts.
+  reword: |
+    Online banking allows customers to handle accounts using any device. Online banking removes most visits to a physical branch. Balances and recent transactions are shown instantly by mobile apps. Those mobile apps issue alerts the moment suspicious activity happens. Two-factor authentication provides an additional layer of security. Such two-factor authentication stops many unauthorized login attempts.
+  merge: |
+    Online banking lets customers manage accounts from any device, and online banking eliminates most trips to a physical branch. Mobile apps display balances and recent transactions instantly, and mobile apps send alerts whenever suspicious activity occurs. Two-factor authentication adds an extra layer of security, which blocks many unauthorized login attempts.
+  split: |
+    Online banking lets customers manage accounts. They manage them from any device. Online banking eliminates trips. It eliminates most trips to a physical branch. Mobile apps display balances. They display recent transactions instantly. Mobile apps send alerts. They send them whenever suspicious activity occurs. Two-factor authentication adds a layer. It is an extra layer of security. Two-factor authentication blocks attempts. It blocks many unauthorized login attempts.
+- id: p31
+  original: |
+    The coastal town sits along a rocky shoreline. The coastal town has a busy harbor full of fishing boats. Seagulls circle above the harbor every morning. The town square holds a market on weekends. A lighthouse stands on the northern cliff. The lighthouse guides ships through the foggy nights.
+  reorder: |
+    A lighthouse stands on the northern cliff. The town square holds a market on weekends. The coastal town sits along a rocky shoreline. Seagulls circle above the harbor every morning. The lighthouse guides ships through the foggy nights. The coastal town has a busy harbor full of fishing boats.
+  reword: |
+    The seaside town rests beside a rugged, rocky coast. A bustling harbor crowded with fishing vessels belongs to the seaside town. Each morning, seagulls wheel over the harbor. On weekends, the town square hosts an open market. Atop the northern cliff a lighthouse rises. Through the foggy nights, the lighthouse steers ships safely.
+  merge: |
+    The coastal town sits along a rocky shoreline, and the coastal town has a busy harbor full of fishing boats. Seagulls circle above the harbor every morning, while the town square holds a market on weekends. A lighthouse stands on the northern cliff, which guides ships through the foggy nights.
+  split: |
+    The coastal town sits along a shoreline. The shoreline is rocky. The coastal town has a busy harbor. The harbor is full of fishing boats. Seagulls circle above the harbor. They circle every morning. The town square holds a market. The market is on weekends. A lighthouse stands on the cliff. The cliff is on the northern side. The lighthouse guides ships. It guides them through the foggy nights.
+- id: p32
+  original: |
+    The hiking trail begins at a wooden trailhead sign. The hiking trail climbs steadily through a pine forest. A clear stream crosses the path near the second mile. Wildflowers bloom along the slopes in early summer. The summit offers a wide view of the valley. The descent follows a gentler ridge back to the parking lot.
+  reorder: |
+    Wildflowers bloom along the slopes in early summer. The hiking trail begins at a wooden trailhead sign. The summit offers a wide view of the valley. A clear stream crosses the path near the second mile. The descent follows a gentler ridge back to the parking lot. The hiking trail climbs steadily through a pine forest.
+  reword: |
+    A wooden trailhead sign marks where the hiking trail starts. The hiking trail rises gradually through a forest of pines. Near the second mile, a clear stream cuts across the path. In early summer, wildflowers blossom over the slopes. From the summit, a broad view of the valley opens up. The descent traces a milder ridge down to the parking lot.
+  merge: |
+    The hiking trail begins at a wooden trailhead sign, and the hiking trail climbs steadily through a pine forest. A clear stream crosses the path near the second mile, while wildflowers bloom along the slopes in early summer. The summit offers a wide view of the valley, and the descent follows a gentler ridge back to the parking lot.
+  split: |
+    The hiking trail begins at a sign. The sign is a wooden trailhead. The hiking trail climbs steadily. It climbs through a pine forest. A clear stream crosses the path. It crosses near the second mile. Wildflowers bloom along the slopes. They bloom in early summer. The summit offers a view. The view of the valley is wide. The descent follows a ridge. The ridge is gentler and returns to the parking lot.
+- id: p33
+  original: |
+    The farmers market opens at dawn every Saturday. The farmers market fills the central plaza with bright stalls. Vendors sell fresh vegetables from nearby farms. A baker offers warm bread beside the fountain. Musicians play folk tunes near the entrance gate. The market closes once the afternoon crowds thin out.
+  reorder: |
+    Musicians play folk tunes near the entrance gate. The farmers market opens at dawn every Saturday. A baker offers warm bread beside the fountain. The farmers market fills the central plaza with bright stalls. The market closes once the afternoon crowds thin out. Vendors sell fresh vegetables from nearby farms.
+  reword: |
+    Every Saturday, the farmers market begins at first light. Bright stalls from the farmers market spread across the central plaza. Local farms supply the fresh vegetables that vendors sell. Beside the fountain, a baker serves warm bread. Near the entrance gate, musicians perform folk tunes. Once the afternoon crowds thin out, the market shuts down.
+  merge: |
+    The farmers market opens at dawn every Saturday, and the farmers market fills the central plaza with bright stalls. Vendors sell fresh vegetables from nearby farms, while a baker offers warm bread beside the fountain. Musicians play folk tunes near the entrance gate, and the market closes once the afternoon crowds thin out.
+  split: |
+    The farmers market opens at dawn. It opens every Saturday. The farmers market fills the central plaza. The plaza is full of bright stalls. Vendors sell fresh vegetables. The vegetables come from nearby farms. A baker offers warm bread. The bread sits beside the fountain. Musicians play folk tunes. They play near the entrance gate. The market closes. It closes once the afternoon crowds thin out.
+- id: p34
+  original: |
+    The train journey starts at a crowded city platform. The train journey winds through green rolling hills. Passengers watch small villages pass beyond the windows. A dining car serves hot meals around noon. The route crosses a tall iron bridge over a river. The train arrives at the coastal terminal by evening.
+  reorder: |
+    A dining car serves hot meals around noon. The train journey starts at a crowded city platform. The route crosses a tall iron bridge over a river. Passengers watch small villages pass beyond the windows. The train arrives at the coastal terminal by evening. The train journey winds through green rolling hills.
+  reword: |
+    At a packed city platform, the train journey gets underway. The train journey snakes among green, rolling hills. Beyond the windows, passengers observe small villages going by. Around midday, a dining car provides hot meals. Over a river, the route spans a tall iron bridge. By evening, the train reaches the coastal terminal.
+  merge: |
+    The train journey starts at a crowded city platform, and the train journey winds through green rolling hills. Passengers watch small villages pass beyond the windows, while a dining car serves hot meals around noon. The route crosses a tall iron bridge over a river, and the train arrives at the coastal terminal by evening.
+  split: |
+    The train journey starts at a platform. The platform is in the city and crowded. The train journey winds through hills. The hills are green and rolling. Passengers watch small villages. The villages pass beyond the windows. A dining car serves hot meals. It serves them around noon. The route crosses a bridge. The bridge is tall and iron and spans a river. The train arrives at the terminal. The terminal is coastal and reached by evening.
+- id: p35
+  original: |
+    The national park covers thousands of forested acres. The national park protects herds of wild elk. Tall waterfalls drop from granite cliffs in the canyon. Rangers lead guided walks each summer morning. Campsites line the shore of a deep blue lake. The visitor center displays maps of every trail.
+  reorder: |
+    Rangers lead guided walks each summer morning. The national park covers thousands of forested acres. The visitor center displays maps of every trail. Tall waterfalls drop from granite cliffs in the canyon. The national park protects herds of wild elk. Campsites line the shore of a deep blue lake.
+  reword: |
+    Thousands of forested acres make up the national park. Herds of wild elk are protected by the national park. In the canyon, tall waterfalls plunge from granite cliffs. On summer mornings, rangers conduct guided walks. Along the shore of a deep blue lake, campsites are arranged. Maps of every trail are shown at the visitor center.
+  merge: |
+    The national park covers thousands of forested acres, and the national park protects herds of wild elk. Tall waterfalls drop from granite cliffs in the canyon, while rangers lead guided walks each summer morning. Campsites line the shore of a deep blue lake, and the visitor center displays maps of every trail.
+  split: |
+    The national park covers many acres. The acres are forested and number in the thousands. The national park protects herds. The herds are of wild elk. Tall waterfalls drop from cliffs. The cliffs are granite and in the canyon. Rangers lead guided walks. They lead them each summer morning. Campsites line the shore. The shore belongs to a deep blue lake. The visitor center displays maps. The maps cover every trail.
+- id: p36
+  original: |
+    The small restaurant occupies a narrow brick storefront. The small restaurant seats only twenty guests at once. A chalkboard menu lists the daily specials near the door. The chef prepares each dish from local ingredients. Candles light the wooden tables every evening. Regular diners reserve their favorite corner booth weeks ahead.
+  reorder: |
+    Candles light the wooden tables every evening. The small restaurant occupies a narrow brick storefront. The chef prepares each dish from local ingredients. A chalkboard menu lists the daily specials near the door. Regular diners reserve their favorite corner booth weeks ahead. The small restaurant seats only twenty guests at once.
+  reword: |
+    A narrow brick storefront houses the small restaurant. Only twenty guests can be seated at once in the small restaurant. Near the door, a chalkboard menu shows the daily specials. Each dish is made by the chef from local ingredients. Every evening, candles illuminate the wooden tables. Weeks in advance, regular diners book their favorite corner booth.
+  merge: |
+    The small restaurant occupies a narrow brick storefront, and the small restaurant seats only twenty guests at once. A chalkboard menu lists the daily specials near the door, while the chef prepares each dish from local ingredients. Candles light the wooden tables every evening, and regular diners reserve their favorite corner booth weeks ahead.
+  split: |
+    The small restaurant occupies a storefront. The storefront is narrow and brick. The small restaurant seats guests. It seats only twenty at once. A chalkboard menu lists the daily specials. The menu sits near the door. The chef prepares each dish. The dishes use local ingredients. Candles light the wooden tables. They light them every evening. Regular diners reserve a booth. The booth is their favorite corner one booked weeks ahead.
+- id: p37
+  original: |
+    The city neighborhood grew around an old textile factory. The city neighborhood now features cafes and small galleries. Brick row houses line the quiet side streets. A community garden thrives behind the corner church. Street art covers the walls along the main avenue. Residents gather in the central park on warm evenings.
+  reorder: |
+    A community garden thrives behind the corner church. The city neighborhood grew around an old textile factory. Street art covers the walls along the main avenue. Brick row houses line the quiet side streets. Residents gather in the central park on warm evenings. The city neighborhood now features cafes and small galleries.
+  reword: |
+    An old textile factory was the seed around which the city neighborhood developed. Cafes and small galleries now characterize the city neighborhood. The quiet side streets are lined with brick row houses. Behind the corner church, a community garden flourishes. Along the main avenue, street art coats the walls. On warm evenings, residents come together in the central park.
+  merge: |
+    The city neighborhood grew around an old textile factory, and the city neighborhood now features cafes and small galleries. Brick row houses line the quiet side streets, while a community garden thrives behind the corner church. Street art covers the walls along the main avenue, and residents gather in the central park on warm evenings.
+  split: |
+    The city neighborhood grew. It grew around an old textile factory. The city neighborhood now features cafes. It also features small galleries. Brick row houses line the side streets. The side streets are quiet. A community garden thrives. It thrives behind the corner church. Street art covers the walls. The walls run along the main avenue. Residents gather in the central park. They gather on warm evenings.
+- id: p38
+  original: |
+    The beach resort spreads across a wide stretch of white sand. The beach resort offers cabanas right beside the waves. Palm trees shade the long poolside terrace. Guests rent kayaks from a hut near the pier. A buffet restaurant overlooks the turquoise bay. Evening bonfires draw families to the shore after sunset.
+  reorder: |
+    A buffet restaurant overlooks the turquoise bay. The beach resort spreads across a wide stretch of white sand. Palm trees shade the long poolside terrace. The beach resort offers cabanas right beside the waves. Evening bonfires draw families to the shore after sunset. Guests rent kayaks from a hut near the pier.
+  reword: |
+    Across a broad expanse of white sand, the beach resort extends. Cabanas right next to the waves are provided by the beach resort. The long poolside terrace is shaded by palm trees. From a hut near the pier, guests rent kayaks. The turquoise bay is overlooked by a buffet restaurant. After sunset, evening bonfires lure families down to the shore.
+  merge: |
+    The beach resort spreads across a wide stretch of white sand, and the beach resort offers cabanas right beside the waves. Palm trees shade the long poolside terrace, while guests rent kayaks from a hut near the pier. A buffet restaurant overlooks the turquoise bay, and evening bonfires draw families to the shore after sunset.
+  split: |
+    The beach resort spreads across a stretch of sand. The sand is white and wide. The beach resort offers cabanas. The cabanas sit right beside the waves. Palm trees shade the terrace. The terrace is long and poolside. Guests rent kayaks. They rent them from a hut near the pier. A buffet restaurant overlooks the bay. The bay is turquoise. Evening bonfires draw families to the shore. They draw them after sunset.
+- id: p39
+  original: |
+    The mountain village clings to a steep alpine slope. The mountain village has narrow cobbled lanes between stone houses. Cattle graze in the high meadows each summer. A wooden chapel stands at the center of the square. Snow blankets the rooftops through the long winter. Travelers reach the village by a winding gravel road.
+  reorder: |
+    Snow blankets the rooftops through the long winter. The mountain village clings to a steep alpine slope. A wooden chapel stands at the center of the square. Cattle graze in the high meadows each summer. Travelers reach the village by a winding gravel road. The mountain village has narrow cobbled lanes between stone houses.
+  reword: |
+    To a steep alpine slope, the mountain village clings tightly. Between stone houses, the mountain village has narrow cobbled lanes. Each summer, cattle graze across the high meadows. At the center of the square, a wooden chapel stands. Throughout the long winter, snow covers the rooftops. By a winding gravel road, travelers arrive at the village.
+  merge: |
+    The mountain village clings to a steep alpine slope, and the mountain village has narrow cobbled lanes between stone houses. Cattle graze in the high meadows each summer, while a wooden chapel stands at the center of the square. Snow blankets the rooftops through the long winter, and travelers reach the village by a winding gravel road.
+  split: |
+    The mountain village clings to a slope. The slope is steep and alpine. The mountain village has narrow cobbled lanes. The lanes run between stone houses. Cattle graze in the high meadows. They graze each summer. A wooden chapel stands at the center. The center is in the square. Snow blankets the rooftops. It blankets them through the long winter. Travelers reach the village. They reach it by a winding gravel road.
+- id: p40
+  original: |
+    The botanical garden displays plants from many distant continents. The botanical garden features a large glass conservatory at its heart. Rose beds bloom in tidy rows near the main gate. A koi pond reflects the willows along the eastern path. Volunteers tend the herb collection every weekend. Schoolchildren visit the garden on guided field trips.
+  reorder: |
+    A koi pond reflects the willows along the eastern path. The botanical garden displays plants from many distant continents. Schoolchildren visit the garden on guided field trips. Rose beds bloom in tidy rows near the main gate. The botanical garden features a large glass conservatory at its heart. Volunteers tend the herb collection every weekend.
+  reword: |
+    Plants gathered from many distant continents are shown in the botanical garden. At its heart, the botanical garden boasts a large glass conservatory. Near the main gate, rose beds flower in neat rows. Along the eastern path, a koi pond mirrors the willows. Each weekend, volunteers care for the herb collection. On guided field trips, schoolchildren tour the garden.
+  merge: |
+    The botanical garden displays plants from many distant continents, and the botanical garden features a large glass conservatory at its heart. Rose beds bloom in tidy rows near the main gate, while a koi pond reflects the willows along the eastern path. Volunteers tend the herb collection every weekend, and schoolchildren visit the garden on guided field trips.
+  split: |
+    The botanical garden displays plants. The plants come from many distant continents. The botanical garden features a conservatory. The conservatory is large, glass, and at its heart. Rose beds bloom in tidy rows. The rows are near the main gate. A koi pond reflects the willows. The willows line the eastern path. Volunteers tend the herb collection. They tend it every weekend. Schoolchildren visit the garden. They visit on guided field trips.
+- id: p41
+  original: |
+    Ludwig van Beethoven composed nine symphonies during his career. Beethoven gradually lost his hearing in his later years. The Ninth Symphony introduced a choral finale to symphonic music. The choral finale sets words from a poem by Friedrich Schiller. Orchestras around the world still perform Beethoven's symphonies today. Music students study Beethoven's scores as models of classical form.
+  reorder: |
+    Beethoven gradually lost his hearing in his later years. Music students study Beethoven's scores as models of classical form. Ludwig van Beethoven composed nine symphonies during his career. The choral finale sets words from a poem by Friedrich Schiller. The Ninth Symphony introduced a choral finale to symphonic music. Orchestras around the world still perform Beethoven's symphonies today.
+  reword: |
+    Across his career, Ludwig van Beethoven wrote a total of nine symphonies. In his final years, Beethoven slowly went deaf. A choral ending was brought into symphonic music by the Ninth Symphony. Words drawn from a Friedrich Schiller poem are sung in that choral ending. Even now, orchestras everywhere continue to play Beethoven's symphonies. As examples of classical form, Beethoven's scores are examined by music students.
+  merge: |
+    Ludwig van Beethoven composed nine symphonies during his career, and Beethoven gradually lost his hearing in his later years. The Ninth Symphony introduced a choral finale to symphonic music, and the choral finale sets words from a poem by Friedrich Schiller. Orchestras around the world still perform Beethoven's symphonies today, while music students study Beethoven's scores as models of classical form.
+  split: |
+    Ludwig van Beethoven composed symphonies during his career. There were nine of them. Beethoven gradually lost his hearing. This happened in his later years. The Ninth Symphony introduced a choral finale. This finale was new to symphonic music. The choral finale sets words to music. The words come from a poem by Friedrich Schiller. Orchestras around the world still perform Beethoven's symphonies. They do so today. Music students study Beethoven's scores. They use the scores as models of classical form.
+- id: p42
+  original: |
+    Vincent van Gogh painted The Starry Night in 1889. Van Gogh used thick swirling brushstrokes to depict the night sky. The painting shows a small village beneath rolling hills. A tall cypress tree rises in the foreground of the painting. The Museum of Modern Art in New York now owns The Starry Night. Visitors crowd around The Starry Night every single day.
+  reorder: |
+    A tall cypress tree rises in the foreground of the painting. The painting shows a small village beneath rolling hills. Vincent van Gogh painted The Starry Night in 1889. Visitors crowd around The Starry Night every single day. Van Gogh used thick swirling brushstrokes to depict the night sky. The Museum of Modern Art in New York now owns The Starry Night.
+  reword: |
+    In 1889, Vincent van Gogh created The Starry Night. To render the night sky, van Gogh applied heavy, swirling strokes of paint. Beneath rolling hills, the painting portrays a tiny village. In the painting's foreground stands a towering cypress tree. The Starry Night is currently held by the Museum of Modern Art in New York. Each and every day, crowds of visitors gather around The Starry Night.
+  merge: |
+    Vincent van Gogh painted The Starry Night in 1889, and van Gogh used thick swirling brushstrokes to depict the night sky. The painting shows a small village beneath rolling hills, while a tall cypress tree rises in the foreground of the painting. The Museum of Modern Art in New York now owns The Starry Night, and visitors crowd around The Starry Night every single day.
+  split: |
+    Vincent van Gogh painted The Starry Night. He painted it in 1889. Van Gogh used thick swirling brushstrokes. The brushstrokes depict the night sky. The painting shows a small village. The village sits beneath rolling hills. A tall cypress tree rises in the painting. It stands in the foreground. The Museum of Modern Art in New York now owns The Starry Night. New York is where it hangs. Visitors crowd around The Starry Night. They come every single day.
+- id: p43
+  original: |
+    Herman Melville published Moby-Dick in 1851. Moby-Dick follows Captain Ahab in his hunt for a white whale. The narrator of the novel introduces himself with the line "Call me Ishmael." The ship Pequod sails across vast oceans during the story. Many chapters describe the details of the whaling industry. Readers consider Moby-Dick a cornerstone of American literature.
+  reorder: |
+    The ship Pequod sails across vast oceans during the story. Herman Melville published Moby-Dick in 1851. Many chapters describe the details of the whaling industry. The narrator of the novel introduces himself with the line "Call me Ishmael." Moby-Dick follows Captain Ahab in his hunt for a white whale. Readers consider Moby-Dick a cornerstone of American literature.
+  reword: |
+    In 1851, Herman Melville brought out Moby-Dick. The story of Moby-Dick traces Captain Ahab as he pursues a white whale. With the words "Call me Ishmael," the novel's narrator presents himself. Throughout the tale, the ship Pequod travels across enormous oceans. The specifics of the whaling trade are laid out in numerous chapters. To readers, Moby-Dick stands as a foundation of American literature.
+  merge: |
+    Herman Melville published Moby-Dick in 1851, and Moby-Dick follows Captain Ahab in his hunt for a white whale. The narrator of the novel introduces himself with the line "Call me Ishmael," while the ship Pequod sails across vast oceans during the story. Many chapters describe the details of the whaling industry, and readers consider Moby-Dick a cornerstone of American literature.
+  split: |
+    Herman Melville published Moby-Dick. He published it in 1851. Moby-Dick follows Captain Ahab. Ahab is on a hunt for a white whale. The narrator of the novel introduces himself. He uses the line "Call me Ishmael." The ship Pequod sails during the story. It crosses vast oceans. Many chapters describe the whaling industry. They cover its details. Readers consider Moby-Dick important. They see it as a cornerstone of American literature.
+- id: p44
+  original: |
+    Orson Welles directed Citizen Kane in 1941. Citizen Kane tells the story of a newspaper magnate named Charles Foster Kane. The film opens with Kane whispering the word "Rosebud." Cinematographers praise Citizen Kane for its deep-focus photography. Critics often rank Citizen Kane among the greatest films ever made. Film schools regularly screen Citizen Kane for new students.
+  reorder: |
+    The film opens with Kane whispering the word "Rosebud." Citizen Kane tells the story of a newspaper magnate named Charles Foster Kane. Film schools regularly screen Citizen Kane for new students. Orson Welles directed Citizen Kane in 1941. Critics often rank Citizen Kane among the greatest films ever made. Cinematographers praise Citizen Kane for its deep-focus photography.
+  reword: |
+    In 1941, Orson Welles made Citizen Kane. Citizen Kane recounts the life of a press tycoon called Charles Foster Kane. As the film begins, Kane murmurs the word "Rosebud." For its deep-focus photography, Citizen Kane earns admiration from cinematographers. Citizen Kane is frequently placed by critics among the finest films ever produced. For incoming students, film schools routinely show Citizen Kane.
+  merge: |
+    Orson Welles directed Citizen Kane in 1941, and Citizen Kane tells the story of a newspaper magnate named Charles Foster Kane. The film opens with Kane whispering the word "Rosebud," while cinematographers praise Citizen Kane for its deep-focus photography. Critics often rank Citizen Kane among the greatest films ever made, and film schools regularly screen Citizen Kane for new students.
+  split: |
+    Orson Welles directed Citizen Kane. He directed it in 1941. Citizen Kane tells a story. The story is about a newspaper magnate named Charles Foster Kane. The film opens with Kane. He is whispering the word "Rosebud." Cinematographers praise Citizen Kane. They admire its deep-focus photography. Critics often rank Citizen Kane highly. They place it among the greatest films ever made. Film schools regularly screen Citizen Kane. They show it for new students.
+- id: p45
+  original: |
+    Tennis matches take place on courts of clay, grass, or hard surfaces. A tennis player serves the ball to start every point. The Wimbledon tournament has been played on grass courts since 1877. Players win a game by scoring at least four points with a two-point lead. The net divides the tennis court into two equal halves. Umpires watch each tennis match to enforce the rules.
+  reorder: |
+    The net divides the tennis court into two equal halves. The Wimbledon tournament has been played on grass courts since 1877. A tennis player serves the ball to start every point. Umpires watch each tennis match to enforce the rules. Tennis matches take place on courts of clay, grass, or hard surfaces. Players win a game by scoring at least four points with a two-point lead.
+  reword: |
+    Clay, grass, or hard surfaces are the courts on which tennis matches are held. To begin each point, a tennis player serves the ball. Since 1877, the Wimbledon tournament has taken place on grass courts. A game is won by players who score at least four points while holding a two-point lead. Into two equal halves, the net splits the tennis court. To enforce the rules, umpires observe every tennis match.
+  merge: |
+    Tennis matches take place on courts of clay, grass, or hard surfaces, and a tennis player serves the ball to start every point. The Wimbledon tournament has been played on grass courts since 1877, while players win a game by scoring at least four points with a two-point lead. The net divides the tennis court into two equal halves, and umpires watch each tennis match to enforce the rules.
+  split: |
+    Tennis matches take place on courts. The courts can be clay, grass, or hard surfaces. A tennis player serves the ball. The serve starts every point. The Wimbledon tournament is played on grass courts. It has been held there since 1877. Players win a game by scoring points. They need at least four points with a two-point lead. The net divides the tennis court. It splits the court into two equal halves. Umpires watch each tennis match. They are there to enforce the rules.
+- id: p46
+  original: |
+    The violin produces sound through four strings stretched over a wooden body. A violinist draws a bow across the strings to make notes. The violin sits at the heart of every symphony orchestra. Craftsmen in Cremona built famous violins during the seventeenth century. Antonio Stradivari created some of the most prized violins in history. Students often spend many years learning to play the violin well.
+  reorder: |
+    Antonio Stradivari created some of the most prized violins in history. The violin produces sound through four strings stretched over a wooden body. The violin sits at the heart of every symphony orchestra. A violinist draws a bow across the strings to make notes. Students often spend many years learning to play the violin well. Craftsmen in Cremona built famous violins during the seventeenth century.
+  reword: |
+    Sound from the violin comes from four strings stretched across a wooden body. To produce notes, a violinist pulls a bow over the strings. At the core of every symphony orchestra sits the violin. During the seventeenth century, celebrated violins were made by craftsmen in Cremona. Among the most treasured violins in history are those crafted by Antonio Stradivari. Learning to play the violin well often takes students many years.
+  merge: |
+    The violin produces sound through four strings stretched over a wooden body, and a violinist draws a bow across the strings to make notes. The violin sits at the heart of every symphony orchestra, while craftsmen in Cremona built famous violins during the seventeenth century. Antonio Stradivari created some of the most prized violins in history, and students often spend many years learning to play the violin well.
+  split: |
+    The violin produces sound. The sound comes through four strings. The strings are stretched over a wooden body. A violinist draws a bow. The bow moves across the strings to make notes. The violin sits at the heart of every symphony orchestra. It holds a central place there. Craftsmen in Cremona built famous violins. They did so during the seventeenth century. Antonio Stradivari created prized violins. They are some of the most prized in history. Students often spend years learning the violin. They take many years to play it well.
+- id: p47
+  original: |
+    William Shakespeare wrote Hamlet around the year 1600. Hamlet is a tragedy set in the kingdom of Denmark. The prince delivers the famous speech "To be, or not to be." The play explores themes of revenge and madness throughout its scenes. Theater companies stage Hamlet in countless languages across the globe. Actors regard the role of Hamlet as one of the greatest challenges in drama.
+  reorder: |
+    The play explores themes of revenge and madness throughout its scenes. Hamlet is a tragedy set in the kingdom of Denmark. Actors regard the role of Hamlet as one of the greatest challenges in drama. William Shakespeare wrote Hamlet around the year 1600. The prince delivers the famous speech "To be, or not to be." Theater companies stage Hamlet in countless languages across the globe.
+  reword: |
+    Around 1600, William Shakespeare composed Hamlet. Set in the kingdom of Denmark, Hamlet is a tragedy. The renowned speech "To be, or not to be" is spoken by the prince. Throughout its scenes, the play examines themes of revenge and madness. In countless languages around the world, theater companies put on Hamlet. The part of Hamlet is seen by actors as one of drama's greatest challenges.
+  merge: |
+    William Shakespeare wrote Hamlet around the year 1600, and Hamlet is a tragedy set in the kingdom of Denmark. The prince delivers the famous speech "To be, or not to be," while the play explores themes of revenge and madness throughout its scenes. Theater companies stage Hamlet in countless languages across the globe, and actors regard the role of Hamlet as one of the greatest challenges in drama.
+  split: |
+    William Shakespeare wrote Hamlet. He wrote it around the year 1600. Hamlet is a tragedy. It is set in the kingdom of Denmark. The prince delivers a famous speech. The speech is "To be, or not to be." The play explores themes of revenge and madness. It does so throughout its scenes. Theater companies stage Hamlet. They perform it in countless languages across the globe. Actors regard the role of Hamlet highly. They see it as one of the greatest challenges in drama.
+- id: p48
+  original: |
+    Photography captures images by recording light on a sensitive surface. A camera focuses light through a lens onto film or a digital sensor. Photographers adjust the aperture to control how much light enters the camera. The shutter speed determines how long light reaches the recording surface. Early photographers used glass plates coated with chemicals to make pictures. Modern smartphones now let almost anyone take high-quality photographs.
+  reorder: |
+    Early photographers used glass plates coated with chemicals to make pictures. The shutter speed determines how long light reaches the recording surface. Photography captures images by recording light on a sensitive surface. Modern smartphones now let almost anyone take high-quality photographs. A camera focuses light through a lens onto film or a digital sensor. Photographers adjust the aperture to control how much light enters the camera.
+  reword: |
+    By recording light onto a sensitive surface, photography preserves images. Through a lens, a camera directs light onto film or a digital sensor. To regulate how much light comes into the camera, photographers change the aperture. How long light strikes the recording surface is set by the shutter speed. To create pictures, early photographers relied on glass plates coated with chemicals. These days, modern smartphones allow nearly anyone to capture high-quality photographs.
+  merge: |
+    Photography captures images by recording light on a sensitive surface, and a camera focuses light through a lens onto film or a digital sensor. Photographers adjust the aperture to control how much light enters the camera, while the shutter speed determines how long light reaches the recording surface. Early photographers used glass plates coated with chemicals to make pictures, and modern smartphones now let almost anyone take high-quality photographs.
+  split: |
+    Photography captures images. It records light on a sensitive surface. A camera focuses light through a lens. The light lands onto film or a digital sensor. Photographers adjust the aperture. The aperture controls how much light enters the camera. The shutter speed matters too. It determines how long light reaches the recording surface. Early photographers used glass plates. The plates were coated with chemicals to make pictures. Modern smartphones now help people. They let almost anyone take high-quality photographs.
+- id: p49
+  original: |
+    Ballet developed in the royal courts of Renaissance Italy and France. Dancers in ballet often rise onto the tips of their toes. The technique of dancing on the toes is called pointe work. Choreographers arrange the movements that dancers perform on stage. Tchaikovsky composed the music for the famous ballet Swan Lake. Audiences fill theaters to watch ballet companies perform classic works.
+  reorder: |
+    Choreographers arrange the movements that dancers perform on stage. Tchaikovsky composed the music for the famous ballet Swan Lake. Ballet developed in the royal courts of Renaissance Italy and France. Audiences fill theaters to watch ballet companies perform classic works. Dancers in ballet often rise onto the tips of their toes. The technique of dancing on the toes is called pointe work.
+  reword: |
+    In the royal courts of Renaissance Italy and France, ballet first took shape. Onto the tips of their toes, ballet dancers frequently lift themselves. Pointe work is the name given to the technique of dancing on the toes. The movements that dancers carry out on stage are organized by choreographers. The score for the celebrated ballet Swan Lake was written by Tchaikovsky. To see ballet companies perform classic works, audiences pack the theaters.
+  merge: |
+    Ballet developed in the royal courts of Renaissance Italy and France, and dancers in ballet often rise onto the tips of their toes. The technique of dancing on the toes is called pointe work, while choreographers arrange the movements that dancers perform on stage. Tchaikovsky composed the music for the famous ballet Swan Lake, and audiences fill theaters to watch ballet companies perform classic works.
+  split: |
+    Ballet developed in royal courts. The courts were in Renaissance Italy and France. Dancers in ballet often rise up. They rise onto the tips of their toes. There is a technique for dancing on the toes. The technique is called pointe work. Choreographers arrange the movements. The movements are what dancers perform on stage. Tchaikovsky composed the music. The music is for the famous ballet Swan Lake. Audiences fill theaters. They come to watch ballet companies perform classic works.
+- id: p50
+  original: |
+    Michelangelo carved the statue of David from a single block of marble. The statue of David stands more than five meters tall. Sculptors shape stone, bronze, and clay into three-dimensional forms. Ancient Greek sculptors created idealized figures of athletes and gods. The city of Florence displays the original David in a special gallery. Tourists travel from many countries to see Michelangelo's David in person.
+  reorder: |
+    Sculptors shape stone, bronze, and clay into three-dimensional forms. The statue of David stands more than five meters tall. Ancient Greek sculptors created idealized figures of athletes and gods. Michelangelo carved the statue of David from a single block of marble. Tourists travel from many countries to see Michelangelo's David in person. The city of Florence displays the original David in a special gallery.
+  reword: |
+    From one block of marble, Michelangelo sculpted the statue of David. Rising more than five meters in height, the statue of David is enormous. Into three-dimensional forms, sculptors mold stone, bronze, and clay. Idealized figures of athletes and gods were made by ancient Greek sculptors. In a special gallery, the city of Florence puts the original David on view. From many countries, tourists journey to see Michelangelo's David firsthand.
+  merge: |
+    Michelangelo carved the statue of David from a single block of marble, and the statue of David stands more than five meters tall. Sculptors shape stone, bronze, and clay into three-dimensional forms, while ancient Greek sculptors created idealized figures of athletes and gods. The city of Florence displays the original David in a special gallery, and tourists travel from many countries to see Michelangelo's David in person.
+  split: |
+    Michelangelo carved the statue of David. He carved it from a single block of marble. The statue of David is tall. It stands more than five meters tall. Sculptors shape many materials. They work stone, bronze, and clay into three-dimensional forms. Ancient Greek sculptors created figures. The figures were idealized athletes and gods. The city of Florence displays the original David. It keeps the statue in a special gallery. Tourists travel from many countries. They come to see Michelangelo's David in person.
+
+# Committee fixtures adapted from former structural-analyzer prompts.
+- id: analyzer_committee_basic
+  original: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that evening.
+  reorder: |
+    The chairman announced the decision to the press that evening. The committee
+    reviewed the proposal on Monday. It approved the budget after a long debate.
+  reword: |
+    The panel examined the plan on Monday. It sanctioned the budget following a
+    lengthy discussion. The chairman conveyed the verdict to reporters that night.
+  merge: |
+    After reviewing the proposal on Monday and approving the budget following a long
+    debate, the committee's chairman announced the decision to the press that evening.
+  split: |
+    The committee met on Monday. They reviewed the proposal. They approved the
+    budget. The debate had been long. The chairman announced the decision. He spoke
+    to the press. It was that evening.
+- id: analyzer_committee_light
+  original: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that evening.
+  reorder: |
+    It approved the budget after a long debate. The committee reviewed the proposal
+    on Monday. The chairman announced the decision to the press that evening.
+  reword: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that night.
+  merge: |
+    The committee reviewed the proposal on Monday. It approved the budget after a long
+    debate, after which the chairman announced the decision to the press that evening.
+  split: |
+    The committee reviewed the proposal on Monday. It approved the budget. This came
+    after a long debate. The chairman announced the decision to the press that evening.
+- id: analyzer_committee_moderate
+  original: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that evening.
+  reorder: |
+    The committee reviewed the proposal on Monday. The chairman announced the decision
+    to the press that evening. It approved the budget after a long debate.
+  reword: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    heated argument. The chairman announced the decision to the press that evening.
+  merge: |
+    The committee reviewed the proposal on Monday and approved the budget after a long
+    debate. The chairman announced the decision to the press that evening.
+  split: |
+    The committee reviewed the proposal. It was Monday. It approved the budget after a
+    long debate. The chairman announced the decision. He spoke to the press that evening.
+- id: analyzer_committee_extensive
+  original: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that evening.
+  reorder: |
+    The chairman announced the decision to the press that evening. It approved the
+    budget after a long debate. The committee reviewed the proposal on Monday.
+  reword: |
+    The panel assessed the plan on Monday. It sanctioned the spending following a
+    drawn-out discussion. The chair disclosed the verdict to the media that night.
+  merge: |
+    On Monday, after a long debate, the committee reviewed the proposal, approved the
+    budget, and had its chairman announce the decision to the press that evening.
+  split: |
+    The committee reviewed the proposal. It was Monday. The budget was approved.
+    There had been a long debate. The chairman announced the decision. The audience
+    was the press. The time was that evening.
+- id: analyzer_committee_syntax
+  original: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that evening.
+  reorder: |
+    On Monday the committee reviewed the proposal. After a long debate it approved the
+    budget. That evening the chairman announced the decision to the press.
+  reword: |
+    The committee looked over the proposal on Monday. It gave the budget the green
+    light after a long back-and-forth. The chairman broke the news to the press that evening.
+  merge: |
+    After reviewing the proposal on Monday, the committee approved the budget following
+    a long debate, and the chairman announced the decision to the press that evening.
+  split: |
+    The committee reviewed the proposal on Monday. It approved the budget. The debate
+    had been long. The chairman announced the decision to the press. The hour was evening.
+- id: analyzer_committee_extra
+  original: |
+    The committee reviewed the proposal on Monday. It approved the budget after a
+    long debate. The chairman announced the decision to the press that evening.
+  reorder: |
+    It approved the budget after a long debate. The chairman announced the decision to
+    the press that evening. The committee reviewed the proposal on Monday.
+  reword: |
+    The board reviewed the motion on Monday. It approved the budget after a long
+    debate. The chairman announced the ruling to the press that evening.
+  merge: |
+    The committee reviewed the proposal on Monday, and it approved the budget after a
+    long debate, and the chairman announced the decision to the press that evening.
+  split: |
+    The committee met on Monday. They reviewed the proposal. They approved the budget.
+    The debate was long. The chairman spoke that evening. He addressed the press.
+
+- id: nm_satellite_blockmove
+  original: |
+    Weather satellites orbit the Earth from pole to pole. They photograph cloud systems across entire continents. Forecasters use the images to track approaching storms. Coastal towns receive early warnings before a hurricane lands. These warnings give families time to evacuate safely.
+  reorder: |
+    Coastal towns receive early warnings before a hurricane lands. These warnings give families time to evacuate safely. Weather satellites orbit the Earth from pole to pole. They photograph cloud systems across entire continents. Forecasters use the images to track approaching storms.
+  reword: |
+    Meteorological spacecraft circle the planet along a north-south path. They capture imagery of cloud formations spanning whole landmasses. Analysts rely on those pictures to follow incoming storms. Seaside communities get advance alerts ahead of a hurricane's arrival. Such alerts afford households enough time to flee unharmed.
+  merge: |
+    Weather satellites orbit the Earth from pole to pole, and they photograph cloud systems across entire continents, so forecasters use the images to track approaching storms. Coastal towns receive early warnings before a hurricane lands, and these warnings give families time to evacuate safely.
+  split: |
+    Weather satellites orbit the Earth. They travel from pole to pole. They photograph cloud systems. The systems span entire continents. Forecasters use the images. They track approaching storms. Coastal towns receive early warnings. The warnings come before a hurricane lands. These warnings help families. They give time to evacuate safely.
+
+- id: nm_market_novelreword
+  original: |
+    The farmers market opens every Saturday in the town square. Local growers sell fresh vegetables straight from their fields. Bakers offer warm bread and pastries beside the produce stalls. Families gather to shop and listen to live music. The market closes at noon when the vendors pack up.
+  reorder: |
+    Bakers offer warm bread and pastries beside the produce stalls. The market closes at noon when the vendors pack up. The farmers market opens every Saturday in the town square. Families gather to shop and listen to live music. Local growers sell fresh vegetables straight from their fields.
+  reword: |
+    Each weekend the open-air bazaar springs to life within the historic plaza. Nearby cultivators peddle just-harvested greens plucked moments earlier from nearby soil. Artisan bakers present steaming loaves and flaky confections alongside the vegetable booths. Households congregate to browse the wares while a band performs nearby. By midday the whole affair winds down as sellers dismantle their tents.
+  merge: |
+    The farmers market opens every Saturday in the town square, and local growers sell fresh vegetables straight from their fields, while bakers offer warm bread and pastries beside the produce stalls. Families gather to shop and listen to live music, and the market closes at noon when the vendors pack up.
+  split: |
+    The farmers market opens on Saturdays. It is held in the town square. Local growers attend. They sell fresh vegetables. The vegetables come straight from their fields. Bakers set up too. They offer warm bread and pastries. The stalls sit beside the produce. Families gather there. They shop and listen to live music. The market closes at noon. The vendors pack up then.
+
+- id: nm_library_boundaries
+  original: |
+    The old library stood at the center of the campus. Students filled its reading rooms every evening. Librarians shelved returned books before closing time. A quiet courtyard offered space for outdoor study. The building closed for renovations last summer.
+  reorder: |
+    Librarians shelved returned books before closing time. The building closed for renovations last summer. The old library stood at the center of the campus. A quiet courtyard offered space for outdoor study. Students filled its reading rooms every evening.
+  reword: |
+    The aging library sat at the heart of the campus. Pupils packed its reading halls each night. Library staff reshelved returned volumes ahead of closing. A peaceful courtyard provided room for studying outdoors. The structure shut down for repairs this past summer.
+  merge: |
+    The old library stood at the center of the campus, and students filled its reading rooms every evening, while librarians shelved returned books before closing time. A quiet courtyard offered space for outdoor study, and the building closed for renovations last summer.
+  split: |
+    The old library stood there. It was at the center of the campus. Students filled it every evening. They used its reading rooms. Librarians shelved the returned books. They did this before closing time. A quiet courtyard was there too. It offered space for outdoor study. The building closed last summer. It was closed for renovations.
+
+- id: nm_volcano_resegment
+  original: |
+    The volcano had been dormant for centuries. Geologists monitored its slopes with sensitive instruments. A sudden swarm of tremors alarmed the nearby villages. Authorities ordered an immediate evacuation of the region. Ash clouds darkened the sky for several days.
+  reorder: |
+    Authorities ordered an immediate evacuation of the region. Geologists monitored its slopes with sensitive instruments. Ash clouds darkened the sky for several days. The volcano had been dormant for centuries. A sudden swarm of tremors alarmed the nearby villages.
+  reword: |
+    The mountain had lain quiet for hundreds of years. Earth scientists watched its flanks using delicate equipment. An abrupt cluster of quakes frightened the surrounding hamlets. Officials called for the immediate clearing of the area. Plumes of ash blackened the heavens for days on end.
+  merge: |
+    The volcano had been dormant for centuries, and geologists monitored its slopes with sensitive instruments, but a sudden swarm of tremors alarmed the nearby villages. Authorities ordered an immediate evacuation of the region, and ash clouds darkened the sky for several days.
+  split: |
+    The volcano had been dormant. This lasted for centuries. Geologists monitored its slopes. They used sensitive instruments. A sudden swarm of tremors came. It alarmed the nearby villages. Authorities responded quickly. They ordered an immediate evacuation. The whole region was cleared. Ash clouds appeared. They darkened the sky. This went on for several days.

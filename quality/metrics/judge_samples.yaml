@@ -1,0 +1,716 @@
+llm_quality:
+  - id: excellent
+    note: all criteria high -> fluent, coherent, on-topic, specific
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Utilities now balance intermittent solar and wind output with grid-scale
+      batteries and demand-response programs, while operators redesign transmission
+      networks to carry electricity from sunny deserts and windy coasts to distant
+      cities. The shift is also reshaping wholesale markets, where prices dip toward
+      zero during the midday generation peak and spike after sunset.
+
+  - id: disfluent
+    note: fluency LOW (grammar/spelling), but on-topic and substantive
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Renewable energys is growing very fast and many countrys builds solar farm and
+      wind turbine for make the electricity more cheaper, the grid it must to change
+      alot because the sun and the wind they not always is blowing so the battery is
+      needed for store the power when the demand are being high.
+
+  - id: incoherent
+    note: coherence LOW (non sequiturs, unfinished), sentences individually fluent
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Solar power is now the cheapest source of electricity in human history. Grid
+      operators value wind for its perfect predictability. Anyway, the price of
+      copper. The committee met on Tuesday. Therefore the moon, and so
+
+  - id: contradictory_facts
+    note: coherence LOW via direct SELF-contradiction, otherwise fluent/relevant/specific
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Germany now generates more than half of its electricity from renewable sources,
+      a remarkable milestone for a major industrial economy. In fact, Germany still
+      draws the overwhelming majority of its power from coal and has made essentially
+      no progress on renewables at all. Either way, its grid is widely studied abroad.
+
+  - id: off_topic
+    note: relevance LOW (drifts entirely off the prompt), otherwise fluent and coherent
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      My grandmother baked the most wonderful sourdough bread every Sunday morning.
+      The smell would fill the whole house, and we children would crowd into the
+      kitchen waiting for the first warm slice, which she always served with a thick
+      layer of salted butter and a little honey.
+
+  - id: partially_relevant
+    note: relevance MID (~2-3) - starts on-topic then drifts halfway through
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Renewable energy is changing how grids are managed, with operators adding storage
+      to smooth out variable output. This really reminds me of how much technology has
+      reshaped daily life in general - smartphones, streaming services, and online
+      shopping all arrived within a single generation and transformed how we work, shop,
+      and relax in our spare time.
+
+  - id: vague_padding
+    note: informativeness LOW (vague filler, no specifics), otherwise fine
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Renewable energy is a very important topic in today's world. There are many
+      things to consider, and it affects many people in many different ways. Overall,
+      it is clear that this is a significant issue that will continue to be
+      significant going forward, so we should all think carefully about it.
+
+  - id: repetitive
+    note: informativeness ZERO (restates one idea), drags coherence too
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Solar energy is clean. Solar energy is clean and good. Solar energy, which is
+      clean, is a clean form of energy. Because it is clean, solar energy is a clean
+      and clean source of clean energy.
+
+  - id: list_fragment
+    note: informativeness HIGH but fluency + coherence LOW (telegraphic fragments)
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Renewable. Grids changing. Solar, wind - intermittent. Batteries: storage.
+      Transmission upgrades needed. Markets shifting. Prices volatile midday. Demand
+      response. Rooftop solar. Reverse power flows.
+
+  - id: short_complete
+    note: all-high despite being SHORT (length is not quality)
+    prompt: |-
+      Define entropy in one sentence.
+    gen: |-
+      Entropy is a measure of the number of microscopic configurations consistent
+      with a system's macroscopic state, and hence of its disorder and of our
+      uncertainty about its exact arrangement.
+
+  - id: long_rambling
+    note: relevance + informativeness LOW despite LENGTH (length is not quality)
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      The transition to renewable energy is reshaping global power grids, and that is
+      a very interesting thing to think about, really. You know, energy has always
+      mattered to people, ever since someone first discovered fire, and fire is
+      fascinating in its own right because it cooks our food and keeps us warm.
+      Speaking of warmth, the summers do seem hotter lately, which makes me think of
+      the beach, and beaches have sand, and sand is used to make the silicon in solar
+      panels, so really it all connects in the end when you sit and think about it.
+
+  - id: verbose_but_informative
+    note: all-high AND long+dense (length must NOT be penalized when content is rich)
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      The shift to renewables forces grid operators to manage two new problems at once:
+      variability and decentralization. Solar and wind output swings with the weather,
+      so utilities pair them with lithium-ion batteries, pumped-hydro reservoirs, and
+      demand-response contracts that pay factories to curtail load during shortfalls.
+      At the same time, rooftop panels turn millions of consumers into producers,
+      reversing power flows that substations were never designed to handle. In response,
+      operators are deploying smart inverters, dynamic line ratings, and wholesale
+      markets that settle every five minutes to keep supply and demand matched.
+
+  - id: factually_wrong_but_fluent
+    note: SCOPE probe - factually FALSE but fluent/coherent/on-topic/specific; quality
+      has no factuality criterion, so it should stay HIGH. A low score = judge overreach.
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Solar panels generate the most electricity at night, when the cooler air lets
+      their silicon cells run at peak efficiency, so grid operators schedule the
+      heaviest industrial loads for the small hours of the morning to soak up this
+      abundant after-dark supply before demand falls again at sunrise.
+
+  - id: mid_acceptable
+    note: genuinely MIDDLING ~3 - comma splices, filler, generic, thin on specifics
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Renewable energy, it is changing the power grid in lots of ways that are
+      important. Solar panels and wind, they make electricity but the amount it goes
+      up and down depending on the weather and stuff. So the operators they have to do
+      balancing, sometimes using batteries and things like that. It is a topic that
+      has both challenges but also some benefits for the future I think.
+
+  - id: truncated
+    note: coherence LOW - cut off mid-clause with a dangling, clearly unfinished ending
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Grid operators are deploying lithium-ion battery banks to store the surplus solar
+      energy generated around midday, which they then discharge during the evening
+      demand peak when households return home and switch on their appliances, and this
+      matters above all because the gap between midday supply and evening demand is
+      precisely what determines whether a grid can
+
+  # Fluency degradation examples.
+  - id: fluency_mid_typos
+    note: a few typos and agreement slips, otherwise strong -> fluency ~3, others high
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Grid operators is adding large batteries to store solar power, and they then
+      releases it after sunset when demand peak. This help keep supply and demand
+      balanced across the netork during the evening hours.
+
+  - id: fluency_runon
+    note: a single sprawling run-on sentence, no stops -> fluency ~2, content otherwise fine
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Grid operators are adding batteries to store midday solar so they can release it
+      after sunset and this helps balance supply and demand and it also lowers prices
+      during peak generation and it reduces the need for gas plants and it changes how
+      markets clear every few minutes which is a big shift for utilities everywhere.
+
+  - id: fluency_translationese
+    note: grammatical but unnatural, stilted word order -> fluency ~3, others high
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      For the reason of intermittency, the operators of grid they must to install the
+      batteries of large scale. After the sun goes down, makes discharge the stored
+      energy, thus the balance of the demand it is maintained in proper way.
+
+  - id: fluency_comma_splices
+    note: comma splices throughout, no sentence boundaries -> fluency ~2
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Solar output peaks at midday, operators store it in batteries, the batteries
+      discharge after sunset, demand is highest then, this balances the grid, prices
+      fall during the day, they rise at night, the whole market is changing.
+
+  - id: fluency_word_salad
+    note: badly jumbled yet still parseable -> fluency ~1, others reduced
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Batteries grid the store of solar midday operators in, release sunset after for
+      to demand the peak meet, balance so supply the and demand of across network keep.
+
+  # Coherence degradation examples.
+  - id: coherence_ambiguous_refs
+    note: fluent sentences but unclear pronouns/referents -> coherence ~3, fluency high
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Operators connect them to the grid, and it stores the surplus until they need it.
+      Then they release it to them, which keeps it balanced when it spikes in the evening.
+
+  - id: coherence_circular
+    note: circular reasoning that never advances -> coherence ~2, fluency high
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Renewables reshape the grid because the grid is reshaped by renewables. Since the
+      grid changes, renewables change it, and because renewables change it, the grid
+      changes. This is why the grid is being reshaped by renewables.
+
+  - id: coherence_topic_jumps
+    note: abrupt, unsignalled topic shifts between sentences -> coherence ~2, each sentence fluent
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Solar farms feed power into the grid at midday. The history of the lightbulb is
+      genuinely fascinating. Battery chemistry has improved a lot recently. Many cities
+      have excellent public transport networks.
+
+  - id: coherence_misordered
+    note: steps presented out of logical order (effect before cause) -> coherence ~3
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      So the batteries discharge in the evening to cover the shortfall. Demand peaks
+      after sunset once people get home. Operators first install the batteries and
+      charge them. Solar generates a surplus around midday.
+
+  - id: coherence_mild_inconsistency
+    note: two statements that mildly conflict, otherwise coherent -> coherence ~3
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Battery storage has made the evening peak easy to cover, and operators rarely
+      worry about it now. Covering the evening peak remains the single hardest problem
+      operators face, and storage has barely helped.
+
+  # Relevance degradation examples.
+  - id: relevance_tangential
+    note: stays on an adjacent topic, never engages the prompt -> relevance ~2, fluent/coherent
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Electric vehicles have surged in popularity, with new models offering longer
+      range each year. Charging networks are expanding along highways, and battery
+      prices keep falling, making EVs affordable for more drivers.
+
+  - id: relevance_restates_prompt
+    note: merely rephrases the prompt, adds nothing -> relevance ~3 but informativeness low
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      The move toward renewable energy is changing power grids around the world. As
+      energy shifts to renewables, the grids that carry power are being reshaped by
+      this global transition.
+
+  - id: relevance_wrong_question
+    note: answers a related but different question than the prompt -> relevance ~2
+    prompt: |-
+      Explain why solar output varies over the course of a day.
+    gen: |-
+      Wind power is variable because wind speeds rise and fall with weather systems and
+      the time of year, so turbines spin faster during storms and slow during calm
+      spells, which makes their output hard to predict.
+
+  - id: relevance_starts_off_returns
+    note: opens off-topic then returns to the prompt -> relevance ~3
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      I have always loved hiking in the mountains on clear autumn mornings. Anyway,
+      grids are changing: operators now pair solar and wind with storage and redesign
+      transmission to move clean power from remote sites to cities.
+
+  - id: relevance_overgeneral
+    note: stays on the broad theme but never engages the specific prompt -> relevance ~3
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Energy is one of the most important issues of our time. Throughout history,
+      societies have depended on power in countless ways, and decisions about energy
+      shape economies, politics, and the environment for generations to come.
+
+  # Informativeness degradation examples.
+  - id: info_hedging
+    note: fluent, on-topic, but non-committal with no concrete content -> informativeness ~1
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      It really depends on many factors. There are advantages and disadvantages, and
+      different experts see it differently. In the end, the outcome could go various
+      ways depending on the circumstances and how things develop over time.
+
+  - id: info_single_point
+    note: one substantive fact buried in filler -> informativeness ~2
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      There is a lot to say about this important and complex subject. One thing worth
+      noting is that grid-scale batteries can store midday solar for evening use. Beyond
+      that, it is a big topic with many angles to consider going forward.
+
+  - id: info_truisms
+    note: only obvious truisms, no real content -> informativeness ~1
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Energy is important. Power grids carry electricity. Renewable energy comes from
+      renewable sources. When things change, they are different than before. Electricity
+      is used by people who need it.
+
+  - id: info_dense_terse
+    note: short but packed with specific content -> informativeness 5, fluency/coherence high
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      Operators now settle markets every five minutes, dispatch grid batteries at the
+      evening ramp, curtail solar when midday prices hit zero, and add dynamic line
+      ratings to push more wind power through existing transmission corridors.
+
+  - id: info_dodge
+    note: acknowledges the topic but defers instead of answering -> informativeness ~1
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: |-
+      That is a great and very important question. It is the kind of topic that
+      deserves careful study by experts, and there is a great deal of research on it.
+      I would encourage anyone interested to look into it further.
+
+  - id: empty
+    note: empty continuation -> every criterion 0 (short-circuits before the LLM)
+    prompt: |-
+      The transition to renewable energy is reshaping global power grids.
+    gen: ""
+
+# Pairwise judge fixtures cover positive and negative criteria.
+llm_judge:
+  - id: identical
+    note: exact copy -> CP 5, DR 5, II 0, C 0 (aggregate ~1.0)
+    ref: |-
+      The Amazon River discharges about 209,000 cubic metres of water per second into
+      the Atlantic Ocean, more than the next seven largest rivers combined, and runs
+      roughly 6,400 kilometres across South America.
+    gen: |-
+      The Amazon River discharges about 209,000 cubic metres of water per second into
+      the Atlantic Ocean, more than the next seven largest rivers combined, and runs
+      roughly 6,400 kilometres across South America.
+
+  - id: faithful_paraphrase
+    note: full reword, all facts kept -> CP 5, DR 5, II 0, C 0
+    ref: |-
+      The Amazon River discharges about 209,000 cubic metres of water per second into
+      the Atlantic Ocean, more than the next seven largest rivers combined, and runs
+      roughly 6,400 kilometres across South America.
+    gen: |-
+      Winding some 6,400 kilometres through South America, the Amazon pours around
+      209,000 cubic metres of water into the Atlantic every second - more than the
+      seven next-biggest rivers put together.
+
+  - id: paraphrase_with_reorder
+    note: reworded AND fact order shuffled, nothing lost/added -> CP 5, DR 5, II 0, C 0
+    ref: |-
+      The Treaty of Versailles, signed in 1919, formally ended World War I, imposed
+      heavy reparations on Germany, and established the League of Nations.
+    gen: |-
+      Establishing the League of Nations and saddling Germany with heavy reparations,
+      the 1919 Treaty of Versailles brought the First World War to a formal close.
+
+  - id: total_rewrite_same_meaning
+    note: extreme lexical divergence, identical meaning -> CP 5, DR 5 (CP must survive reword)
+    ref: |-
+      Photosynthesis converts carbon dioxide and water into glucose and oxygen using
+      light energy captured by chlorophyll in plant cells.
+    gen: |-
+      Inside plant cells, chlorophyll traps sunlight and uses that energy to turn water
+      and carbon dioxide into sugar and oxygen.
+
+  - id: omits_one_detail
+    note: drops a named participant, rest faithful -> CP ~4, DR ~3, II 0, C 0
+    ref: |-
+      The 1969 Apollo 11 mission landed Neil Armstrong and Buzz Aldrin on the Moon on
+      July 20, while Michael Collins orbited overhead in the command module Columbia.
+    gen: |-
+      On July 20, 1969, the Apollo 11 mission landed Neil Armstrong and Buzz Aldrin on
+      the surface of the Moon.
+
+  - id: heavy_omission
+    note: keeps only the gist, drops most specifics -> CP ~3, DR ~1, II 0, C 0
+    ref: |-
+      Beethoven's Ninth Symphony, premiered in Vienna on 7 May 1824, runs about
+      seventy minutes, is scored for a large orchestra plus four vocal soloists and a
+      chorus, and sets Schiller's poem "Ode to Joy" in its final movement.
+    gen: |-
+      Beethoven's Ninth Symphony is a long choral work that ends with the "Ode to Joy".
+
+  - id: mild_injection
+    note: one small added qualifier -> CP 5, DR 5, II ~1, C 0
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889 and today a beloved tourist attraction,
+      stands 330 metres tall and was designed by Gustave Eiffel's engineering company.
+
+  - id: moderate_injection
+    note: all facts kept + a couple of new facts added -> CP 5, DR 5, II ~3, C 0
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company. It draws about seven million visitors a
+      year, many of whom climb its stairs partway to the second level.
+
+  - id: injects_info
+    note: all ref facts kept + much new content added -> CP 5, DR 5, II 5, C 0
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company. It is repainted every seven years using
+      sixty tonnes of paint, contains 1,710 steps to the top, and remained the
+      tallest structure in the world until the Chrysler Building overtook it in 1930.
+
+  - id: detail_error_date
+    note: detail probe - one date wrong (1889->1887), claims intact -> CP high, detail_precision low, contradiction 0 (a detail slip, not a contradiction)
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1887, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+
+  - id: detail_error_number
+    note: detail probe - one figure wrong (50->15 languages), claims intact -> CP high, detail_precision low, contradiction 0
+    ref: |-
+      Chinua Achebe's novel "Things Fall Apart", published in 1958, has sold over ten
+      million copies and been translated into more than fifty languages.
+    gen: |-
+      Chinua Achebe's novel "Things Fall Apart", published in 1958, has sold over ten
+      million copies and been translated into more than fifteen languages.
+
+  - id: detail_error_figure
+    note: detail probe - one figure wrong (height 5895->6895), rank+location kept -> CP high, detail_precision low, contradiction 0
+    ref: |-
+      Mount Kilimanjaro, the highest mountain in Africa, rises to 5,895 metres and is
+      located in Tanzania.
+    gen: |-
+      Kilimanjaro, located in Tanzania, is the highest peak in Africa, rising to 6,895
+      metres above sea level.
+
+  - id: detail_error_multiple
+    note: detail probe - two specifics wrong (height + country), "highest in Africa" claim kept -> CP ~mid, detail_precision very low, contradiction 0 (boundary - is a wrong named place a detail or a claim conflict?)
+    ref: |-
+      Mount Kilimanjaro, the highest mountain in Africa, rises to 5,895 metres and is
+      located in Tanzania.
+    gen: |-
+      Mount Kilimanjaro, the highest mountain in Africa, rises to 4,895 metres and is
+      located in Kenya.
+
+  - id: omission_and_injection
+    note: drops a ref detail AND adds new ones -> CP ~4, DR ~2, II ~4, C 0 (mixed)
+    ref: |-
+      The 1969 Apollo 11 mission landed Neil Armstrong and Buzz Aldrin on the Moon on
+      July 20, while Michael Collins orbited overhead in the command module Columbia.
+    gen: |-
+      On July 20, 1969, Apollo 11 landed Neil Armstrong and Buzz Aldrin on the Moon,
+      where they planted an American flag and collected 21.5 kilograms of lunar rock
+      before lifting off again.
+
+  - id: inject_and_contradict
+    note: general-claim contradiction (single decade/Qin vs centuries/Ming) PLUS a fabricated claim injected -> contradiction ~4, II ~4, CP low
+    ref: |-
+      The Great Wall of China was built over many centuries, and most of its surviving
+      sections date to the Ming dynasty, between 1368 and 1644.
+    gen: |-
+      The Great Wall of China was thrown up in a single decade under the Qin dynasty,
+      and it is the only man-made object visible from the Moon with the naked eye.
+
+  - id: contradiction_claim
+    note: contradiction probe - reverses the reference's central claim/outcome -> contradiction high; content still covered so CP high; specific (1929) kept so detail_precision high
+    ref: |-
+      The 1929 Wall Street crash triggered the Great Depression, and the U.S. economy
+      contracted sharply for years afterward.
+    gen: |-
+      The 1929 Wall Street crash had little lasting effect, and the U.S. economy
+      expanded strongly in the years that followed.
+
+  - id: contradiction_sentiment
+    note: contradiction probe - flips the overall evaluative sentiment, same subject -> contradiction high; content still covered so CP high; detail_precision high (subject kept)
+    ref: |-
+      Critics hailed the film as a masterpiece, praising its bold direction and the
+      emotional depth of its performances.
+    gen: |-
+      Critics panned the film as a disaster, attacking its clumsy direction and the
+      emotional emptiness of its performances.
+
+  - id: off_topic
+    note: completely unrelated subject -> CP 0, DR 0, II 5, C 0 (aggregate ~0.25)
+    ref: |-
+      Photosynthesis converts carbon dioxide and water into glucose and oxygen using
+      light energy captured by chlorophyll in plant cells.
+    gen: |-
+      The stock market rallied on Thursday as technology shares led broad gains, with
+      the benchmark index closing up 2.3 percent on heavy trading volume.
+
+  - id: partial_preservation
+    note: drops 3 of 4 points (date, WWI-ending claim, reparations), keeps only the League -> content_recall ~2; detail_precision 5 (nothing stated is wrong); contradiction 0
+    ref: |-
+      The Treaty of Versailles, signed in 1919, formally ended World War I, imposed
+      heavy reparations on Germany, and established the League of Nations.
+    gen: |-
+      The Versailles agreement established the League of Nations.
+
+  # Content-recall examples.
+  - id: recall_half
+    note: keeps 2 of 4 points (revenue, net income), drops growth% and the Model Y driver -> content_recall ~3, detail_precision 5, contradiction 0
+    ref: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, with net
+      income of $2.3 billion driven by strong Model Y sales in Europe.
+    gen: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion and net income of $2.3 billion.
+
+  - id: recall_one_point
+    note: keeps only 1 of 4 points (revenue) -> content_recall ~1-2
+    ref: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, with net
+      income of $2.3 billion driven by strong Model Y sales in Europe.
+    gen: |-
+      Tesla's Q3 2024 revenue was $25.2 billion.
+
+  - id: recall_generalized
+    note: addresses every claim but strips the specifics away -> content_recall mid-high (points taken up), detail_precision 5 (nothing wrong is stated)
+    ref: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, with net
+      income of $2.3 billion driven by strong Model Y sales in Europe.
+    gen: |-
+      Tesla reported higher quarterly revenue and a solid profit, helped by strong
+      vehicle sales.
+
+  - id: recall_complete_reorder
+    note: all four points kept but reordered and reworded -> content_recall 5, detail_precision 5
+    ref: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, with net
+      income of $2.3 billion driven by strong Model Y sales in Europe.
+    gen: |-
+      Strong European Model Y sales drove Tesla to $2.3 billion in net income in Q3
+      2024, on revenue of $25.2 billion - a 7.8% rise from a year earlier.
+
+  - id: recall_half_plus_padding
+    note: keeps 2 points and pads with unrelated content -> content_recall ~3 and information_injection moderate
+    ref: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, with net
+      income of $2.3 billion driven by strong Model Y sales in Europe.
+    gen: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion and net income of $2.3 billion.
+      The company's headquarters are in Texas and its CEO is active on social media.
+
+  # Detail-precision examples.
+  - id: precision_approximation
+    note: a figure rounded (209,000 -> ~200,000) rather than wrong -> detail_precision ~3-4 (tolerance probe), content_recall 5
+    ref: |-
+      The Amazon River runs 6,400 kilometres and discharges 209,000 cubic metres of
+      water per second into the Atlantic Ocean.
+    gen: |-
+      The Amazon River runs about 6,400 kilometres and discharges roughly 200,000 cubic
+      metres of water per second into the Atlantic Ocean.
+
+  - id: precision_unit_error
+    note: right number, wrong unit (kilometres -> miles) -> detail_precision low, content_recall 5, contradiction 0
+    ref: |-
+      The Amazon River runs 6,400 kilometres and discharges 209,000 cubic metres of
+      water per second into the Atlantic Ocean.
+    gen: |-
+      The Amazon River runs 6,400 miles and discharges 209,000 cubic metres of water
+      per second into the Atlantic Ocean.
+
+  - id: precision_name_typo
+    note: a proper name slightly misspelled -> detail_precision ~3, content_recall 5
+    ref: |-
+      The theory of general relativity was published by Albert Einstein in 1915 while
+      he was living in Berlin.
+    gen: |-
+      The theory of general relativity was published by Albert Einstien in 1915 while
+      he was living in Berlin.
+
+  - id: precision_half_wrong
+    note: four specifics, two correct and two wrong -> detail_precision ~2-3 (clean mid), content_recall 5
+    ref: |-
+      The marathon covers 42.2 kilometres, was first run at the 1896 Athens Olympics,
+      and has a men's world record of 2 hours 0 minutes 35 seconds.
+    gen: |-
+      The marathon covers 42.2 kilometres, was first run at the 1904 St. Louis
+      Olympics, and has a men's world record of 2 hours 9 minutes 35 seconds.
+
+  - id: precision_dense_correct
+    note: many specifics, all correct (reworded) -> detail_precision 5, content_recall 5
+    ref: |-
+      The marathon covers 42.2 kilometres, was first run at the 1896 Athens Olympics,
+      and has a men's world record of 2 hours 0 minutes 35 seconds.
+    gen: |-
+      Run over 42.2 kilometres, the marathon debuted at the 1896 Athens Olympics; the
+      men's world record stands at 2 hours, 0 minutes and 35 seconds.
+
+  # Information-injection examples.
+  - id: injection_opinion
+    note: adds an evaluative opinion not in the reference -> information_injection ~3, content_recall 5, contradiction 0
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company - surely the most beautiful structure ever built.
+
+  - id: injection_inference
+    note: adds a plausible inference the reference does not state -> information_injection ~2
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company, so its construction must have taken several years.
+
+  - id: injection_elaboration
+    note: elaborates a kept point with invented specifics -> information_injection ~3-4
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company, which employed 250 workers and used 18,000
+      iron pieces fastened by hand.
+
+  - id: injection_single_fact
+    note: adds one fabricated statistic, nothing else -> information_injection ~2
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall, draws 50 million
+      visitors a year, and was designed by Gustave Eiffel's engineering company.
+
+  - id: injection_tangent
+    note: appends a whole unrelated tangent -> information_injection ~5, content_recall 5
+    ref: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company.
+    gen: |-
+      The Eiffel Tower, completed in 1889, stands 330 metres tall and was designed by
+      Gustave Eiffel's engineering company. Paris is also famous for its cafes, where
+      buttery croissants and strong espresso are a morning ritual for many residents.
+
+  # Contradiction examples.
+  - id: contradiction_partial
+    note: reverses one of four claims (net income fell), keeps the rest -> contradiction ~2-3, content_recall 5
+    ref: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, with net
+      income of $2.3 billion driven by strong Model Y sales in Europe.
+    gen: |-
+      Tesla reported Q3 2024 revenue of $25.2 billion, up 7.8% year over year, though
+      net income fell sharply despite strong Model Y sales in Europe.
+
+  - id: contradiction_negation
+    note: negates the central claim -> contradiction 5, content_recall high
+    ref: |-
+      A large clinical trial found that the new vaccine reduced severe illness in
+      elderly patients.
+    gen: |-
+      A large clinical trial found that the new vaccine did not reduce severe illness
+      in elderly patients.
+
+  - id: contradiction_direction
+    note: reverses the direction of both trends at the claim level -> contradiction 5
+    ref: |-
+      Between 2010 and 2020 the city's population rose by 15 percent and its average
+      rent doubled.
+    gen: |-
+      Between 2010 and 2020 the city's population fell by 15 percent and its average
+      rent was cut in half.
+
+  - id: contradiction_causal
+    note: reverses the causal direction -> contradiction ~4, content_recall high
+    ref: |-
+      Heavy rainfall in April caused the river to flood, which forced hundreds of
+      residents to evacuate.
+    gen: |-
+      The river flooding in April caused the heavy rainfall, which forced hundreds of
+      residents to evacuate.
+
+  - id: contradiction_scope
+    note: overgeneralizes the scope (some -> all) -> contradiction ~3, content_recall high
+    ref: |-
+      Some economists supported the central bank's decision to raise interest rates.
+    gen: |-
+      Every economist supported the central bank's decision to raise interest rates.
+
+  - id: empty
+    note: empty candidate -> every criterion 0 (short-circuits before the LLM)
+    ref: |-
+      Photosynthesis converts carbon dioxide and water into glucose and oxygen using
+      light energy captured by chlorophyll in plant cells.
+    gen: ""

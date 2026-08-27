@@ -1,0 +1,8 @@
+[submodule "external/pmark"]
+	path = external/pmark
+	url = git@github.com:D-Diaa/PMark.git
+	branch = codex/fair-evaluation
+[submodule "external/SAMark"]
+	path = external/SAMark
+	url = git@github.com:D-Diaa/SAMark.git
+	branch = codex/fair-evaluation

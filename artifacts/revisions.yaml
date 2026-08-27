@@ -1,0 +1,127 @@
+schema_version: 1
+artifact:
+  name: SwordStamp
+  version: 1.0.0
+  repository: https://github.com/D-Diaa/SwordStamp
+  paper_title: Semantic Watermarking with Order-Robust Detection over Sub-sentence Units
+  paper_source_revision: 8c1ac5cd6d9cfcd76c4051a2457854e03576bbfd
+
+protocol:
+  python: "3.11"
+  provider_candidate_budget: 64
+  generated_documents: 1024
+  null_documents: 1024
+  maximum_new_tokens: 256
+  comparison_maximum_sentences: 12
+  semantic_span_maximum_words: 15
+  semantic_span_comparison_window: 5
+
+repositories:
+  pmark:
+    url: git@github.com:D-Diaa/PMark.git
+    branch: codex/fair-evaluation
+    revision: 5a8ad3008fdc2c58e607de2f60941c2d1911deb9
+  samark:
+    url: git@github.com:D-Diaa/SAMark.git
+    branch: codex/fair-evaluation
+    revision: 9160b8025fda05be9a36e02abf0450c1249693cc
+  gpu_scheduler:
+    url: git@github.com:D-Diaa/gpu_scheduler.git
+    revision: a86c356d13c8b5fad0097e0847e11dcda4579f3d
+
+datasets:
+  - role: prompts-centers-and-null
+    identifier: allenai/c4
+    configuration: realnewslike
+    revision: 1588ec454efa1a09f29cd18ddd04fe05fc8653a2
+    redistribution: excluded
+
+models:
+  - role: provider
+    identifier: meta-llama/Llama-3.1-8B
+    revision: d04e592bb4f6aa9cfee91e2e20afa771667e1d4b
+    scope: paper
+  - role: watermark-embedder
+    identifier: AbeHou/SemStamp-c4-sbert
+    revision: a77dce8530e100ac1101981e4be390546c1cb282
+    scope: paper
+  - role: comparison-embedder
+    identifier: sentence-transformers/all-mpnet-base-v2
+    revision: e8c3b32edf5434bc2275fc9bab85f82640a19130
+    scope: paper
+  - role: no-box-paraphraser
+    identifier: Qwen/Qwen2.5-3B-Instruct
+    revision: aa8e72537993ba99e69dfaafa59ed015b17504d1
+    scope: paper
+  - role: no-box-surrogate
+    identifier: BAAI/bge-base-en-v1.5
+    revision: a5beb1e3e68b9ab74eb54cfd186867f64f240e1a
+    scope: paper
+  - role: quality-judge
+    identifier: Qwen/Qwen3-32B
+    revision: 9216db5781bf21249d130ec9da846c4624c16137
+    scope: paper
+  - role: embedding-similarity
+    identifier: google/embeddinggemma-300m
+    revision: 57c266a740f537b4dc058e1b0cda161fd15afa75
+    scope: paper
+  - role: dipper-paraphraser
+    identifier: kalpeshk2011/dipper-paraphraser-xxl
+    revision: c1fbf7a958a2aab022e9e6f81f7a3139f9e6ee3c
+    scope: paper
+  - role: dipper-tokenizer
+    identifier: google/t5-v1_1-xxl
+    revision: 3db67ab1af984cf10548a73467f0e5bca2aaaeb2
+    scope: paper
+  - role: remover-paraphraser
+    identifier: DDiaa/WM-Removal-Unigram-Qwen2.5-3B
+    revision: 5dc6abf0746e908ac4c27806958d2e69e3685514
+    scope: retained-attack-suite
+  - role: mauve-featurizer
+    identifier: gpt2-large
+    revision: 32b71b12589c2f8d625668d2335a01cac3249519
+    scope: paper-quality
+  - role: pegasus-paraphraser
+    identifier: tuner007/pegasus_paraphrase
+    revision: 0159e2949ca73657a2f1329898f51b7bb53b9ab2
+    scope: retained-attack-suite
+  - role: parrot-paraphraser
+    identifier: prithivida/parrot_paraphraser_on_T5
+    revision: 9f32aa1e456e8e8a90d97e8673365f3090fa49fa
+    scope: retained-attack-suite
+  - role: parrot-adequacy
+    identifier: prithivida/parrot_adequacy_model
+    revision: 87a35bc291d7455cfc86fc5f6a374c92de0156af
+    scope: retained-attack-suite
+  - role: parrot-fluency
+    identifier: prithivida/parrot_fluency_model
+    revision: e5224ff5b4109cd949ce25b0a6dff8d8cbdec7be
+    scope: retained-attack-suite
+  - role: bertscore-default
+    identifier: roberta-large
+    revision: 722cf37b1afa9454edce342e7895e588b6ff1d59
+    scope: retained-attack-suite
+
+# These retained attack-suite paths resolve models dynamically and were not
+# part of the paper protocol. They are listed so an unpinned external fetch is
+# never mistaken for a recorded artifact input.
+unverified_external_models:
+  - role: masked-word-edit
+    identifier: bert-base-uncased
+    reason: no matching local snapshot was available when the release manifest was made
+  - role: back-translation
+    identifier_pattern: Helsinki-NLP/opus-mt-{en-LANG,LANG-en}
+    languages: [zh, de, fr, ru, ar]
+    reason: pivot models are selected dynamically and are outside the paper experiment matrix
+  - role: diverse-parrot-generation-plugin
+    identifier: transformers-community/group-beam-search
+    reason: optional remote generation code is used only by the retained non-paper attack mode
+  - role: openai-sentence-attack
+    identifier: gpt-3.5-turbo
+    reason: API-served model revisions are controlled by the provider and cannot be content-pinned
+
+artifacts:
+  - path: artifacts/centers/cc_sentence_nltk_k8.pt
+    sha256: 31e3acdb5471fd508e6c1b44df07d29b6e6340c13190a3843bbdae60d4e214f5
+  - path: artifacts/centers/cc_semspan_spacy_max15_win5_k8.pt
+    sha256: 0b838b81865e303ba84f5e2d79134f22137801aadad35e9d5ee3c45dbb0f925d

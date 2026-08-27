@@ -1,0 +1,44 @@
+# Python environments and caches
+.venv/
+**/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+/build/
+/dist/
+*.egg-info/
+
+# Local tools and credentials
+.tools/
+.env
+.env.*
+!.env.example
+.codex/
+.claude/
+
+# Model and experiment data (never committed)
+/data
+/models/
+/semstamp-data/
+/results/
+/figures/
+/runs/
+/logs/
+/wandb/
+/cache/
+
+# Scheduler scratch files
+/scripts/jobs/
+/scripts/configs/
+/tasks/
+*.log
+*.nfs*
+
+# Editor and operating-system files
+.DS_Store
+.idea/
+.vscode/
+*~

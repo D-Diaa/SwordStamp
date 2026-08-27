@@ -1,0 +1,14 @@
+# Sentence | KMeans | context | best-of-n.
+generation:
+  sampling_method: best-of-n
+  num_candidates: 64
+watermark:
+  mode: kmeans
+  embedder: AbeHou/SemStamp-c4-sbert
+  sp_dim: 8
+  lmbd: 0.25
+  margin: 0.0
+  cc_path: artifacts/centers/cc_sentence_nltk_k8.pt
+segmentation:
+  type: sentence
+  backend: nltk

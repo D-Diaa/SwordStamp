@@ -1,0 +1,122 @@
+# Multi-sentence fixtures for custom rewrite smoke tests.
+
+samples:
+  - id: renewable_grid
+    note: news; connectives + one long clause-chain sentence
+    text: |-
+      The transition to renewable energy is reshaping power grids worldwide. Utilities now balance intermittent solar and wind output with grid-scale batteries, demand-response programs, and fast-ramping gas plants that fill the gaps. However, these tools are expensive, and regulators have been slow to approve the new transmission lines that carry electricity from sunny deserts to distant cities. Prices therefore swing sharply, dipping toward zero at midday and spiking after sunset. Engineers expect storage costs to keep falling. That decline should smooth the daily curve within a decade.
+
+  - id: jwst_launch
+    note: science; short factual sentences good for merging
+    text: |-
+      The James Webb Space Telescope launched on December 25, 2021. It travelled nearly a million miles to reach its orbit. There it unfolded a gold-coated mirror and a tennis-court-sized sunshield. The instrument observes infrared light from the earliest galaxies. Because that light is faint and ancient, the telescope must stay extremely cold. Its first images stunned astronomers around the world.
+
+  - id: roman_roads
+    note: history; long subordinate clauses to split
+    text: |-
+      Roman engineers built roads that endured for centuries because they dug deep foundations, layered crushed stone and gravel for drainage, and topped the surface with tightly fitted paving blocks that shed rainwater. The network eventually stretched more than fifty thousand miles, linking the empire's frontiers to its capital. Soldiers marched along these routes, and merchants followed close behind. As a result, goods, taxes, and ideas moved faster than ever before. Many modern European highways still trace the original Roman lines.
+
+  - id: sourdough
+    note: how-to / instructions; sequential steps with temporal connectives
+    text: |-
+      Making sourdough begins with a starter, a living mix of flour and water that captures wild yeast over several days. Once the starter bubbles reliably, you fold it into more flour, water, and salt to form a shaggy dough. Then you let the dough rest and stretch it periodically so the gluten develops strength. After a long, slow rise, you shape the loaf and chill it overnight to deepen the flavor. Finally, you bake it in a scorching covered pot, which traps steam and yields a crackling crust.
+
+  - id: octopus_cognition
+    note: nature; mix of long and short sentences
+    text: |-
+      Octopuses are among the most intelligent invertebrates on Earth. They can open jars, solve mazes, and recognize individual human faces. Two-thirds of an octopus's neurons sit in its arms rather than its central brain, so each arm can taste, touch, and react almost independently. This distributed nervous system lets the animal explore several crevices at once. Yet octopuses live only a year or two, and they die soon after reproducing. Their brief lives make their cleverness all the more remarkable.
+
+  - id: coffee_trade
+    note: business; cause-effect chain
+    text: |-
+      Global coffee prices surged this year after droughts struck major growing regions in Brazil and Vietnam. Because the two countries supply most of the world's beans, even a modest shortfall ripples through the entire market. Roasters absorbed some of the increase at first, but eventually they passed the cost on to cafes and supermarkets. Consumers, facing pricier lattes, began trading down to cheaper blends. Analysts warn that climate volatility could make such spikes routine.
+
+  - id: deep_sea_vents
+    note: science; descriptive, semicolon candidates
+    text: |-
+      Hydrothermal vents sit on the ocean floor where seawater seeps into the crust, is superheated by magma, and erupts back out laden with minerals. Around these vents thrive ecosystems that need no sunlight at all. Giant tube worms, ghostly crabs, and mats of bacteria draw energy from chemicals instead. The bacteria convert hydrogen sulfide into food through a process called chemosynthesis. Scientists study these communities partly because they hint at how life might survive on distant moons.
+
+  - id: marathon_training
+    note: sports; short imperative-ish sentences for merging
+    text: |-
+      Training for a marathon takes months of patient preparation. Runners gradually increase their weekly mileage. They mix long slow runs with faster interval sessions. Rest days matter just as much as hard workouts. Proper nutrition and sleep help the body absorb the training load. On race day, the goal is simply to hold a steady, sustainable pace.
+
+  - id: central_banks
+    note: finance; conditional and contrastive connectives
+    text: |-
+      Central banks raise interest rates to cool an overheating economy and tame inflation. When borrowing becomes more expensive, households and firms spend less, and price pressures ease. However, if rates climb too far, growth can stall and unemployment may rise. Policymakers therefore watch a flood of data, from wage growth to consumer confidence, before each decision. They aim for a soft landing, slowing the economy without tipping it into recession.
+
+  - id: vaccines
+    note: medicine; mechanism explanation
+    text: |-
+      Vaccines work by teaching the immune system to recognize a pathogen before a real infection occurs. They present a harmless piece of the virus or bacterium, such as a surface protein, to the body. In response, the immune system manufactures antibodies and memory cells. If the real pathogen later appears, these defenders mount a fast, powerful counterattack. As a result, the person either avoids illness entirely or suffers a much milder case.
+
+  - id: amazon_rainforest
+    note: environment; long sentence plus short ones
+    text: |-
+      The Amazon rainforest stores enormous amounts of carbon and helps regulate rainfall across South America, which makes its preservation a global concern as well as a regional one. Deforestation, driven by cattle ranching and soybean farming, has cleared vast tracts of the forest. Each lost hectare releases stored carbon into the atmosphere. The forest also generates much of its own rain through transpiration. If too many trees fall, scientists fear parts of it could tip into dry savanna.
+
+  - id: gutenberg_press
+    note: history; invention narrative
+    text: |-
+      Johannes Gutenberg introduced movable-type printing to Europe in the fifteenth century. Before his press, scribes copied books by hand, a slow and costly labor. Gutenberg's system used reusable metal letters, oil-based ink, and a modified wine press. Suddenly, identical copies of a text could be produced quickly and cheaply. This flood of affordable books spread literacy, fueled the Reformation, and accelerated the spread of new ideas.
+
+  - id: machine_learning
+    note: AI/tech; abstract, clause-rich
+    text: |-
+      A machine learning model learns patterns from data rather than following rules a programmer writes by hand. During training, it adjusts millions of internal parameters to reduce the gap between its predictions and the correct answers. Once trained, the model can generalize to examples it has never seen before. However, if the training data is biased or too narrow, the model will faithfully reproduce those flaws. Careful evaluation on diverse, held-out data is therefore essential before deployment.
+
+  - id: great_barrier_reef
+    note: nature; threats and consequences
+    text: |-
+      The Great Barrier Reef is the largest living structure on Earth, visible even from space. It shelters thousands of species, from tiny clownfish to massive groupers. Rising ocean temperatures, however, trigger coral bleaching, in which stressed corals expel the algae that feed and color them. Repeated bleaching events have damaged large stretches of the reef. Conservationists are racing to breed heat-tolerant corals before warming outpaces the ecosystem's ability to recover.
+
+  - id: electric_cars
+    note: tech/business; adoption story
+    text: |-
+      Electric cars have moved from a niche curiosity to a mainstream choice in barely a decade. Falling battery prices and expanding charging networks have eased two of the biggest worries for buyers. Many governments sweeten the deal with tax credits and tighter emissions rules. Still, charging on long road trips remains slower than filling a tank. Automakers are pouring billions into new factories, betting that the shift is now irreversible.
+
+  - id: photosynthesis
+    note: science; tight process description
+    text: |-
+      Photosynthesis is the process by which plants convert sunlight into chemical energy. Inside leaf cells, pigments such as chlorophyll absorb light, mainly in the red and blue wavelengths. The plant uses that energy to combine carbon dioxide from the air with water drawn up from the roots. It produces sugars that fuel growth and releases oxygen as a byproduct. Nearly all life on Earth depends, directly or indirectly, on this quiet chemical engine.
+
+  - id: venice_flooding
+    note: travel/environment; problem and response
+    text: |-
+      Venice has always lived in a delicate truce with the sea that surrounds it. In recent decades, however, rising tides and sinking ground have made flooding more frequent and severe. The city finally built a system of mobile barriers that can rise from the seabed to hold back exceptional high water. When forecasters predict a dangerous tide, operators inflate the gates hours in advance. The defenses buy time, but they cannot reverse the slow creep of the rising Adriatic.
+
+  - id: jazz_history
+    note: music; cultural history
+    text: |-
+      Jazz emerged in the early twentieth century from the African American communities of New Orleans. It blended blues, ragtime, and brass-band traditions into something improvisational and new. Musicians prized spontaneity, trading solos and bending notes in ways written scores could never capture. As records and radio spread, the music travelled north to Chicago and New York. There it splintered into swing, bebop, and countless later styles that still echo today.
+
+  - id: bee_decline
+    note: agriculture/science; stakes and causes
+    text: |-
+      Honeybees pollinate a large share of the crops that fill our plates, from almonds to apples. In recent years, beekeepers have reported alarming losses in their colonies. Scientists blame a tangle of causes, including pesticides, parasitic mites, habitat loss, and disease. No single culprit explains every collapse, which makes the problem hard to solve. Farmers, researchers, and gardeners are now experimenting with ways to give pollinators safer places to feed and nest.
+
+  - id: gothic_cathedrals
+    note: architecture; engineering detail
+    text: |-
+      Gothic cathedrals soar upward in a way that earlier stone buildings never could. Their builders invented the pointed arch, the ribbed vault, and the flying buttress to carry enormous weight along slender lines. Because the walls no longer had to bear the full load, they could be opened up with vast stained-glass windows. Sunlight poured through colored glass onto worshippers below. These structures often took more than a century to complete, spanning many generations of masons.
+
+  - id: antarctic_ice
+    note: climate science; measurement and consequence
+    text: |-
+      Antarctica holds enough ice to raise global sea levels by dozens of meters if it were ever to melt entirely. Satellites now track the continent's ice sheets with remarkable precision, weighing them month by month. The measurements show that some glaciers are thinning and sliding toward the sea faster than before. Warm ocean water, sneaking beneath the floating ice shelves, appears to be the main driver. Scientists are trying to pin down how quickly this loss might accelerate.
+
+  - id: sleep_science
+    note: psychology/health; functions of sleep
+    text: |-
+      Sleep is far from a passive shutdown of the brain. During the night, the brain cycles through distinct stages, each with its own rhythm and purpose. Deep sleep helps consolidate memories and repair the body, while dream-rich REM sleep supports learning and emotional balance. A network of channels even flushes metabolic waste from brain tissue as we rest. Skimp on sleep for too long, and attention, mood, and immune function all begin to suffer.
+
+  - id: panama_canal
+    note: engineering/history; scale and operation
+    text: |-
+      The Panama Canal slices through a narrow isthmus to join the Atlantic and Pacific oceans. Before it opened in 1914, ships had to sail thousands of extra miles around the tip of South America. The canal lifts vessels over the high ground using a staircase of massive locks filled with fresh water from a man-made lake. Each transit drains tremendous volumes of water back into the sea. A recent expansion added larger locks so that today's giant container ships can squeeze through.
+
+  - id: tea_ceremony
+    note: culture; ritual description
+    text: |-
+      The Japanese tea ceremony turns a simple drink into a meditation on hospitality and presence. Every motion is deliberate, from folding the cloth to whisking the powdered green tea into a froth. The host arranges flowers, hangs a scroll, and chooses utensils to suit the season. Guests, in turn, admire the bowl and savor the tea in measured sips. The whole ritual celebrates a single, unrepeatable meeting that will never occur in quite the same way again.

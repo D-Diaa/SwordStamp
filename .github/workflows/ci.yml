@@ -1,0 +1,56 @@
+name: artifact-ci
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-and-release-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      MPLCONFIGDIR: /tmp/swordstamp-matplotlib
+      TOKENIZERS_PARALLELISM: "false"
+
+    steps:
+      - name: Check out pinned submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.10.2"
+          enable-cache: true
+
+      - name: Install the frozen CPU test environment
+        run: uv sync --frozen --python 3.11
+
+      - name: Install tokenizer data
+        run: uv run --frozen python scripts/install_punkt.py
+
+      - name: Validate shell entry points
+        run: bash -n scripts/setup.sh scripts/install_gpu_scheduler.sh scripts/experiments/*.sh
+
+      - name: Validate artifact pins and checksums
+        run: uv run --frozen python scripts/check_artifact.py
+
+      - name: Compile Python sources
+        run: >-
+          uv run --frozen python -m compileall -q
+          attacks config quality sampling segmentation visualization watermarking tests
+
+      - name: Run the CPU test suite
+        run: >-
+          uv run --frozen
+          python -m unittest discover -s tests -v
