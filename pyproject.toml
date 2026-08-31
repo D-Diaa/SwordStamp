@@ -50,7 +50,7 @@ dependencies = [
 
 [project.urls]
 Repository = "https://github.com/D-Diaa/SwordStamp"
-Paper = "https://github.com/D-Diaa/SwordStamp#citation"
+Paper = "https://arxiv.org/abs/2608.27666"
 Issues = "https://github.com/D-Diaa/SwordStamp/issues"
 
 [dependency-groups]

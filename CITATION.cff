@@ -19,3 +19,10 @@ preferred-citation:
       given-names: Jonathan
     - family-names: Kerschbaum
       given-names: Florian
+  journal: arXiv
+  year: 2026
+  url: https://arxiv.org/abs/2608.27666
+  identifiers:
+    - type: other
+      value: arXiv:2608.27666
+      description: arXiv identifier

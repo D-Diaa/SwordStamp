@@ -29,7 +29,7 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertEqual(project["license"], "MIT")
         self.assertEqual(project["authors"], [{"name": "Abdulrahman Diaa"}])
 
-    def test_software_and_paper_authorship_are_distinct(self):
+    def test_software_and_paper_citation_metadata_are_distinct(self):
         citation = yaml.safe_load((ROOT / "CITATION.cff").read_text(encoding="utf-8"))
         self.assertEqual(
             citation["authors"],
@@ -43,8 +43,33 @@ class ReleaseMetadataTests(unittest.TestCase):
                 {"family-names": "Kerschbaum", "given-names": "Florian"},
             ],
         )
-        serialized = str(citation).lower()
-        self.assertNotIn("arxiv", serialized)
+        preferred = citation["preferred-citation"]
+        self.assertEqual(preferred["journal"], "arXiv")
+        self.assertEqual(preferred["year"], 2026)
+        self.assertEqual(preferred["url"], "https://arxiv.org/abs/2608.27666")
+        self.assertIn(
+            {
+                "type": "other",
+                "value": "arXiv:2608.27666",
+                "description": "arXiv identifier",
+            },
+            preferred["identifiers"],
+        )
+        self.assertEqual(
+            self.pyproject["project"]["urls"]["Paper"],
+            "https://arxiv.org/abs/2608.27666",
+        )
+        self.assertEqual(
+            self.revisions["artifact"]["paper_identifier"],
+            "arXiv:2608.27666",
+        )
+        self.assertEqual(
+            self.revisions["artifact"]["paper_url"],
+            "https://arxiv.org/abs/2608.27666",
+        )
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("https://arxiv.org/abs/2608.27666", readme)
+        self.assertIn("@misc{diaa2026semantic", readme)
 
     def test_dependency_surface_names_only_direct_requirements(self):
         project = self.pyproject["project"]

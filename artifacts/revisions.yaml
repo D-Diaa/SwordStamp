@@ -4,6 +4,8 @@ artifact:
   version: 1.0.0
   repository: https://github.com/D-Diaa/SwordStamp
   paper_title: Semantic Watermarking with Order-Robust Detection over Sub-sentence Units
+  paper_identifier: arXiv:2608.27666
+  paper_url: https://arxiv.org/abs/2608.27666
   paper_source_revision: 8c1ac5cd6d9cfcd76c4051a2457854e03576bbfd
 
 protocol:

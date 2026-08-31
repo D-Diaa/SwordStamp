@@ -5,6 +5,9 @@ embedding-based semantic watermarks. This artifact contains the exact paper
 configuration, generation and detection code, the unchanged attack suite,
 quality evaluation, and deterministic result extraction and plotting.
 
+**Paper:** [Semantic Watermarking with Order-Robust Detection over Sub-sentence
+Units](https://arxiv.org/abs/2608.27666) (arXiv:2608.27666)
+
 ## Headline results
 
 At 5% false-positive rate and a 90% content-preservation requirement, the
@@ -199,6 +202,20 @@ text, and comparison submodules retain their own terms; see `THIRD_PARTY.md`.
 
 ## Citation
 
-SwordStamp software is authored by Abdulrahman Diaa. The paper authors are
+If you use SwordStamp, please cite the paper:
+
+```bibtex
+@misc{diaa2026semantic,
+  title         = {Semantic Watermarking with Order-Robust Detection over Sub-sentence Units},
+  author        = {Abdulrahman Diaa and Jonathan Petit and Florian Kerschbaum},
+  year          = {2026},
+  eprint        = {2608.27666},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CR},
+  url           = {https://arxiv.org/abs/2608.27666},
+}
+```
+
+SwordStamp software is authored by Abdulrahman Diaa; the paper authors are
 Abdulrahman Diaa, Jonathan Petit, and Florian Kerschbaum. Machine-readable
-citation metadata is in `CITATION.cff`.
+software and preferred paper citation metadata is in `CITATION.cff`.
